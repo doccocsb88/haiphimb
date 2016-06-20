@@ -1,0 +1,19 @@
+PODS:
+  - MarqueeLabel (2.7.5):
+    - MarqueeLabel/ObjC (= 2.7.5)
+  - MarqueeLabel/ObjC (2.7.5)
+  - SDWebImage (3.7.5):
+    - SDWebImage/Core (= 3.7.5)
+  - SDWebImage/Core (3.7.5)
+
+DEPENDENCIES:
+  - MarqueeLabel (~> 2.7)
+  - SDWebImage (~> 3.7)
+
+SPEC CHECKSUMS:
+  MarqueeLabel: bd476f1a91e4414a6aec4ea4096a9979e8c8c2ad
+  SDWebImage: 69c6303e3348fba97e03f65d65d4fbc26740f461
+
+PODFILE CHECKSUM: 6acf20e6e4a43e436a0b963156093af96fa37021
+
+COCOAPODS: 1.0.1
