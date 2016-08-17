@@ -10,8 +10,10 @@
 #import "ListFilmCell.h"
 #import "PlayVideoViewController.h"
 #import "ColorSchemeHelper.h"
+#import "AppDelegate.h"
+#import <RealReachability.h>
 #define NUMBER_COLUMN 3
-const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/catx/";
+const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/home/";
 @interface ListFilmSingleViewController () <RequestImageDelegate>
 {
     CGFloat viewWidth;
@@ -25,8 +27,11 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 @property (weak, nonatomic) IBOutlet UILabel *lbTitle;
 @property (weak, nonatomic) IBOutlet UIView *bgHeader;
 @property (strong,nonatomic) UIRefreshControl *refreshControl;
+@property (strong, nonatomic) UIActivityIndicatorView *activityIndicator;
+@property (assign, nonatomic) ReachabilityStatus curStatus;
 @end
 @implementation ListFilmSingleViewController
+@synthesize curStatus;
 -(id)init{
     self = [super init];
     if(self){
@@ -39,7 +44,7 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 }
 -(void)initRefreshControl{
     self.refreshControl = [[UIRefreshControl alloc] init];
-    self.refreshControl.backgroundColor = [UIColor purpleColor];
+    self.refreshControl.backgroundColor = [UIColor whiteColor];
     self.refreshControl.tintColor = [UIColor whiteColor];
     self.refreshControl.tintColor = [UIColor grayColor];
     [self.refreshControl addTarget:self action:@selector(refresh:) forControlEvents:UIControlEventValueChanged];
@@ -57,7 +62,7 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 }
 -(void)initListFilmView{
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
-    [flowLayout setItemSize:CGSizeMake(boxW  , boxW*3/2)];
+    [flowLayout setItemSize:CGSizeMake(boxW  , boxW*3/2 + 40)];
     [flowLayout setScrollDirection:UICollectionViewScrollDirectionVertical];
     [flowLayout setSectionInset:UIEdgeInsetsMake(5, 5, 5, 5)];
     _listFilm.collectionViewLayout = flowLayout;
@@ -72,10 +77,15 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 }
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self setNeedsStatusBarAppearanceUpdate];
+    curStatus = RealStatusNotReachable;
     viewHeight = self.view.frame.size.height;
     viewWidth = self.view.frame.size.width;
-    [self callWebService];
     paramPage = 1;
+
+    
+    [self callWebService];
+  
     UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
         // portrait
@@ -93,6 +103,19 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 
     self.view.backgroundColor = [UIColor whiteColor];
     // Do any additional setup after loading the view.
+    //
+    _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    _activityIndicator.center = self.view.center;
+    _activityIndicator.hidesWhenStopped = YES;
+    [self.view addSubview:_activityIndicator];
+    [_activityIndicator stopAnimating];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(networkChanged:)
+                                                 name:kRealReachabilityChangedNotification
+                                               object:nil];
+}
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
 }
 -(void)viewWillAppear:(BOOL)animated{
     [super viewWillAppear:animated];
@@ -154,7 +177,7 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
         cell = [[ListFilmCell alloc] initWithFrame:CGRectMake(0, 0, boxW, boxW*3)];
     }
     cell.imgDelegate = self;
-    [cell setContentView:[filmData objectAtIndex:indexPath.row]  atIndex:indexPath.row];
+    [cell setContentView:[filmData objectAtIndex:indexPath.row]  atIndex:indexPath.row single:YES];
     
     //    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 50, 50)];
     //
@@ -170,12 +193,15 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     //    [[SlideNavigationController sharedInstance] changedRightToList];
-    SearchResultItem *item = [filmData objectAtIndex:indexPath.row];
-    PlayVideoViewController *vc= [[PlayVideoViewController alloc] init];
-    [vc prepareFilmData:item];
-    //    [self.navigationController pushViewController:vc animated:YES];
-    NSLog(@"initFilmInfo %d %@ %@ %@ ",item._id,item.name,item.img,item.imglanscape);
-    [self presentViewController:vc animated:YES completion:nil];
+    if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
+        SearchResultItem *item = [filmData objectAtIndex:indexPath.row];
+        //    UIViewController *topVc =  [AppDelegate topMostController];
+        //    UIView *view = [((AppDelegate *)[[UIApplication sharedApplication]delegate]).window  viewWithTag:99];
+        [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
+    }
+
+
+
     
 }
 -(void)setImageAtIndex:(NSInteger)index image:(UIImage *)img{
@@ -227,8 +253,8 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
 #pragma mark - call php api
 -(void)callWebService{
     NSLog(@"call API");
-    NSString *ext= @"phim-le/";
-    NSString *WS_URL = [NSString stringWithFormat:@"%@%@/%d",API_URL_LIST_FILM_SINGLE,ext,paramPage];
+    NSString *ext= @"phim-bo/";
+    NSString *WS_URL = [NSString stringWithFormat:@"%@%@%d",API_URL_LIST_FILM_SINGLE,ext,paramPage];
     //    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:WS_URL]];
     //
     //    [request setHTTPMethod:@"GET"];
@@ -329,6 +355,8 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
                                 //[_listFilm reloadData];
                             }];
                         }
+                        //
+                        [_activityIndicator stopAnimating];
                     });
                 });
             }
@@ -338,5 +366,17 @@ const NSString *API_URL_LIST_FILM_SINGLE = @"http://www.phimb.net/api/list/538c7
     
     
 }
-
+- (void)networkChanged:(NSNotification *)notification
+{
+    RealReachability *reachability = (RealReachability *)notification.object;
+    ReachabilityStatus status = [reachability currentReachabilityStatus];
+    if (status != curStatus) {
+        curStatus = status;
+        NSLog(@"currentStatus:%@",@(status));
+        if (status == RealStatusViaWiFi || status == RealStatusViaWWAN) {
+            [self callWebService];
+            
+        }
+    }
+}
 @end

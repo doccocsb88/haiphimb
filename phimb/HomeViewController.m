@@ -11,6 +11,7 @@
 #import "FilmHomeViewController.h"
 #import "UIDevice-Hardware.h"
 #import "UserDataViewController.h"
+#import "GuideHomeView.h"
 #define CENTER_TAG 1
 #define LEFT_PANEL_TAG 2
 //#define RIGHT_PANEL_TAG 3
@@ -29,12 +30,16 @@
 //@property (nonatomic, strong) RelateFilmViewController *rightPanelViewController;
 @property (nonatomic, assign) BOOL showingRightPanel;
 @property (nonatomic, assign) BOOL showPanel;
+@property (nonatomic, strong) GuideHomeView *guideView;
+@property (nonatomic, assign) CGPoint preVelocity;
+
 @end
 
 @implementation HomeViewController
 @synthesize panelWidth;
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self setNeedsStatusBarAppearanceUpdate];
     // Do any additional setup after loading the view.
     NSString *deviceString =[[UIDevice currentDevice] platformString];
     if ([deviceString containsString:@"iPad"]) {
@@ -44,7 +49,15 @@
         
     }
     [self setupViews];
+    [self setupGestures];
 //    UserDataViewController *vc = [[UserDataViewController alloc] init];
+}
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
+-(void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    [self.view bringSubviewToFront:self.guideView];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -54,15 +67,90 @@
 }
 -(void)viewWillLayoutSubviews{
     [super viewWillLayoutSubviews];
-    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
-        // portrait
-        panelWidth = PANEL_WIDTH;
+//    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+//    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+//        // portrait
+//        panelWidth = PANEL_WIDTH;
+//        
+//    } else {
+//        // landscape
+//        panelWidth = self.view.frame.size.width - (self.view.frame.size.height - 60);
+//    }
+}
+-(void)setupGestures {
+    UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(movePanel:)];
+    [panRecognizer setMinimumNumberOfTouches:1];
+    [panRecognizer setMaximumNumberOfTouches:1];
+    [panRecognizer setDelegate:self];
+    
+    [_CenterXViewController.view addGestureRecognizer:panRecognizer];
+}
+-(void)movePanel:(id)sender {
+    [[[(UITapGestureRecognizer*)sender view] layer] removeAllAnimations];
+    
+    CGPoint translatedPoint = [(UIPanGestureRecognizer*)sender translationInView:self.view];
+    CGPoint velocity = [(UIPanGestureRecognizer*)sender velocityInView:[sender view]];
+    
+    if([(UIPanGestureRecognizer*)sender state] == UIGestureRecognizerStateBegan) {
+        UIView *childView = nil;
         
-    } else {
-        // landscape
-        panelWidth = self.view.frame.size.width - (self.view.frame.size.height - 60);
+        if(velocity.x > 0) {
+            if (!_showingRightPanel) {
+                childView = [self getLeftView];
+            }
+        } else {
+            if (!_showingLeftPanel) {
+//                childView = [self getRightView];
+            }
+            
+        }
+        // make sure the view we're working with is front and center
+        [self.view sendSubviewToBack:childView];
+        [[sender view] bringSubviewToFront:[(UIPanGestureRecognizer*)sender view]];
+    }
+    
+    if([(UIPanGestureRecognizer*)sender state] == UIGestureRecognizerStateEnded) {
         
+        if(velocity.x > 0) {
+            // NSLog(@"gesture went right");
+        } else {
+            // NSLog(@"gesture went left");
+        }
+        
+        if (!_showPanel) {
+            [self movePanelToOriginalPosition];
+        } else {
+            if (_showingLeftPanel) {
+                [self movePanelRight];
+            }  else if (_showingRightPanel) {
+                //                [self movePanelLeft];
+            }
+        }
+    }
+    
+    if([(UIPanGestureRecognizer*)sender state] == UIGestureRecognizerStateChanged) {
+        if(velocity.x > 0 || [sender view].frame.origin.x > 0) {
+            // NSLog(@"gesture went right");
+            
+            
+            // are we more than halfway, if so, show the panel when done dragging by setting this value to YES (1)
+            _showPanel = abs([sender view].center.x - _CenterXViewController.view.frame.size.width/2) > _CenterXViewController.view.frame.size.width/2;
+            
+            // allow dragging only in x coordinates by only updating the x coordinate with translation position
+            [sender view].center = CGPointMake([sender view].center.x + translatedPoint.x, [sender view].center.y);
+            [(UIPanGestureRecognizer*)sender setTranslation:CGPointMake(0,0) inView:self.view];
+            
+            // if you needed to check for a change in direction, you could use this code to do so
+            if(velocity.x*_preVelocity.x + velocity.y*_preVelocity.y > 0) {
+                // NSLog(@"same direction");
+            } else {
+                // NSLog(@"opposite direction");
+            }
+            
+            _preVelocity = velocity;
+        } else {
+            // NSLog(@"gesture went left");
+        }
     }
 }
 
@@ -124,12 +212,21 @@
     //    self.CenterXViewController.indexTagView = indexTab;
     self.CenterXViewController.view.tag = CENTER_TAG;
     self.CenterXViewController.homeDelegate = self;
+    
     [self.view addSubview:self.CenterXViewController.view];
     [self addChildViewController:_CenterXViewController];
     [_CenterXViewController didMoveToParentViewController:self];
 //    [self.CenterXViewController prepareFilmData:self.filmData];
+    //
+    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"guidehome"] == nil) {
+
+    self.guideView = [[GuideHomeView alloc] initWithFrame:self.view.bounds];
     
-}
+    [self.view addSubview:self.guideView];
+    }
+    
+    //
+   }
 -(void)showCenterViewWithShadow:(BOOL)value withOffset:(double)offset {
     if (value) {
         [_CenterXViewController.view.layer setCornerRadius:CORNER_RADIUS];

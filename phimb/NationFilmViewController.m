@@ -15,6 +15,10 @@
 #import "NationViewCell.h"
 #import "FilmViewController.h"
 #import "AppDelegate.h"
+#import "ColorSchemeHelper.h"
+#import "GuideNationView.h"
+#import <RealReachability.h>
+#import "FilmViewCell.h"
 #define NUMBER_COLUMN 3
 #define GENRE_TAB  40
 #define NATION_TAB 44
@@ -44,13 +48,17 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 @property (nonatomic) Reachability *internetReachability;
 @property (nonatomic,assign) NSInteger genreIndex;
 @property (strong, nonatomic) FilmViewController *filmViewController;
+@property (strong, nonatomic) GuideNationView *guideView;
+@property (assign, nonatomic) ReachabilityStatus curStatus;
 @end
 
 @implementation NationFilmViewController
-
+@synthesize curStatus;
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+    [self setNeedsStatusBarAppearanceUpdate];
+    curStatus = RealStatusNotReachable;
     [self setupViews];
     [self initFilmData];
     [self initParams];
@@ -59,30 +67,108 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
     [self initHeader];
     [self initRefreshControl];
     [self initIndicator];
-
+    [self initNotification];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(networkChanged:)
+                                                 name:kRealReachabilityChangedNotification
+                                               object:nil];
 }
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+-(void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    [self.view bringSubviewToFront:self.guideView];
+}
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
+-(void)viewWillLayoutSubviews{
+    [super viewWillLayoutSubviews];
+//    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+//    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+//        // portrait
+//        _lbTitleView.frame =     CGRectMake(50, 20+8, viewSize.width-100, 30);
+//    } else {
+//        // landscape
+//        boxW =self.view.frame.size.height/NUMBER_COLUMN-30/NUMBER_COLUMN;
+//        _lbTitleView.frame =     CGRectMake(50, 20+8, viewSize.height-100, 30);
+//
+//    }
+
+}
 #pragma mark-
 -(void)setupViews{
    
     [self.tbFilm registerNib:[UINib nibWithNibName:@"NationViewCell" bundle:[NSBundle mainBundle]] forCellReuseIdentifier:@"nationcell"];
-    self.tbFilm.backgroundColor = [UIColor whiteColor];
+    self.tbFilm.backgroundColor = [ColorSchemeHelper sharedNationHeaderColor];
     
     [self.view addSubview:self.tbFilm];
-    
+    //
+    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"guidenation"] == nil) {
+
+    self.guideView = [[GuideNationView alloc] initWithFrame:self.view.bounds];
+    [self.view addSubview:self.guideView];
+    }
 }
+
 -(void)initIndicator{
     _indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
     _indicator.center = self.view.center;
     _indicator.frame = CGRectMake(0, 64, viewSize.width, viewSize.height);
     _indicator.backgroundColor = [UIColor whiteColor];
     _indicator.hidesWhenStopped = YES;
-    //    [_indicator startAnimating];
+    [_indicator startAnimating];
     [self.view addSubview:_indicator];
+}
+-(void)initNotification{
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doTabOnView:)
+                                                 name:@"playmovieTouch" object:nil];
+    
+}
+- (void)doTabOnView:(NSNotification *) notification{
+    NSLog(@"nationViewTouch");
+    if (    self.tabBarController.selectedIndex == 4) {
+        
+    
+    NSDictionary *userInfo = notification.userInfo;
+    NSSet *touches = [userInfo objectForKey:@"touchesKey"];
+    UITouch *atouch = [touches anyObject];
+    CGPoint location = [atouch locationInView:self.view];
+    CGPoint locationHome = [[touches anyObject] locationInView:self.leftButton];
+    if (locationHome.x >= 0 &&  locationHome.y>=0 && locationHome.y < 40 && locationHome.x<=40) {
+        [self.leftButton sendActionsForControlEvents:UIControlEventTouchUpInside];
+    }else{
+        //    NSLog(<#NSString *format, ...#>)
+        //    CGPoint menuLocation = [touches anyObject] locationInView:self.btn
+        //        if (self.homeMenu.tag == 0) {
+        [self findViewAtPoint:location andTouch:atouch];
+        //        }
+        NSLog(@"HomeMenu %d",self.leftButton.tag);
+    }
+    NSLog(@"reciveTouchEvent %f :%f",location.x,location.y);
+    }
+}
+-(void)fineMenuIndexAtPoint:(CGPoint)point {
+    
+}
+-(void)findViewAtPoint:(CGPoint)point andTouch:(UITouch *)atouch{
+
+        //        CGPoint cpoint  = _filmCollection.contentOffset;
+        NSIndexPath *indexPath = [self.tbFilm indexPathForRowAtPoint:point];
+        //        [self tableView:self.tbFilm didSelectRowAtIndexPath:indexPath atPoint:CGPointMake(point.x, point.y-marginTop)] ;
+//        self tableview
+        //        [_filmCollection ]
+        //        _filmCollection did
+    if (indexPath) {
+        NationViewCell *cell = [self.tbFilm cellForRowAtIndexPath:indexPath];
+        if (cell) {
+            [cell didSelectAtPoint:atouch];
+        }
+    }
+    
 }
 #pragma mark - setup network
 -(void)setupNetwork{
@@ -193,7 +279,7 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 
 -(void)initHeader{
 
-        _bgHeader.backgroundColor = [ColorSchemeHelper sharedNationHeaderColor];
+    _bgHeader.backgroundColor = [ColorSchemeHelper sharedNationHeaderColor];
         
 
     
@@ -203,6 +289,7 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
     _lbTitleView.textColor = [UIColor whiteColor];
     _lbTitleView.textAlignment = NSTextAlignmentCenter;
     _lbTitleView.font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:16.0];
+    _lbTitleView.text = @"Nation";
     _leftButton = [[UIButton alloc] initWithFrame:CGRectMake(5, 20, 50, 55)];
     _leftButton.tag = 1;
     UIImageView *leftMenu = [[UIImageView alloc] initWithFrame:CGRectMake(5,7, 30, 30)];
@@ -217,7 +304,7 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 }
 -(void)initRefreshControl{
     self.refreshControl = [[UIRefreshControl alloc] init];
-    self.refreshControl.backgroundColor = [UIColor purpleColor];
+    self.refreshControl.backgroundColor = [UIColor whiteColor];
     self.refreshControl.tintColor = [UIColor whiteColor];
     self.refreshControl.tintColor = [UIColor grayColor];
     [self.refreshControl addTarget:self action:@selector(refresh:) forControlEvents:UIControlEventValueChanged];
@@ -358,12 +445,15 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 }
 -(void)genreSelected:(Genre *)genre{
     [self btnMovePanelLeft:nil];
+    if (self.filmViewController == nil) {
+        [self showNationDetailView:genre];
+    }else{
     if (![_genre.key isEqualToString:genre.key]) {
         _genre = genre;
         _lbTitleView.text = _genre.title;
         [self.filmViewController resetListFilm:self.genre];
     }
-    
+    }
     
 }
 
@@ -379,7 +469,8 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
         _urlAPI = [NSString stringWithFormat:@"%@",API_URL_NATION_FILMz];
         _genre = [nationDatas objectAtIndex:_genreIndex];
     }else{
-        
+        _urlAPI = [NSString stringWithFormat:@"%@",API_URL_NATION_FILMz];
+        _genre = [nationDatas objectAtIndex:_genreIndex];
         
     }
     viewSize = self.view.frame.size;
@@ -399,17 +490,17 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 -(void)initFilmData{
     filmData = [[NSMutableArray alloc] init];
     genreDatas = @[
-                   [Genre itemWithTitle:@"Hành Động" withKey:@"hanh-dong"],
-                   [Genre itemWithTitle:@"Phiêu Lưu" withKey:@"phieu-luu"],
-                   [Genre itemWithTitle:@"Tình Cảm" withKey:@"tinh-cam"],
-                   [Genre itemWithTitle:@"Tâm Lý" withKey:@"tam-ly"],
-                   [Genre itemWithTitle:@"Võ Thuật" withKey:@"vo-thuat"],
-                   [Genre itemWithTitle:@"Cổ trang" withKey:@"co-trang"],
-                   [Genre itemWithTitle:@"Hài Hước" withKey:@"hai-huoc"],
-                   [Genre itemWithTitle:@"Ca Nhạc" withKey:@"ca-nhac"],
-                   [Genre itemWithTitle:@"Hài Kịch" withKey:@"hai-kich"],
-                   [Genre itemWithTitle:@"Hình Sự" withKey:@"hinh-su"],
-                   [Genre itemWithTitle:@"Chiến Tranh " withKey:@"chien-tranh"]];
+                   [Genre itemWithTitle:@"Action Films" withKey:@"hanh-dong"],
+                   [Genre itemWithTitle:@"Adventure Films" withKey:@"phieu-luu"],
+                   [Genre itemWithTitle:@"Romance Films" withKey:@"tinh-cam"],
+                   [Genre itemWithTitle:@"Drama Films" withKey:@"tam-ly"],
+                   [Genre itemWithTitle:@"Kungfu Films" withKey:@"vo-thuat"],
+                   [Genre itemWithTitle:@"Costume Films" withKey:@"co-trang"],
+                   [Genre itemWithTitle:@"Funny Films" withKey:@"hai-huoc"],
+                   [Genre itemWithTitle:@"Musical Films" withKey:@"ca-nhac"],
+                   [Genre itemWithTitle:@"Comedy Films" withKey:@"hai-kich"],
+                   [Genre itemWithTitle:@"Crime Films" withKey:@"hinh-su"],
+                   [Genre itemWithTitle:@"War Films " withKey:@"chien-tranh"]];
     
     nationDatas = @[
                        [Genre itemWithTitle:@"Hong Kong Movies" withKey:@"hong-kong"],
@@ -427,7 +518,7 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 #pragma mark-
 #pragma mark-tabledelegate
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
-    return boxW *3/2 + 30;
+    return boxW *3/2 + 40 + 30;//header + thumbnail + label
 }
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
     if (nationDatas) {
@@ -438,6 +529,8 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 }
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
     NationViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"nationcell" forIndexPath:indexPath];
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    cell.contentView.backgroundColor = [ColorSchemeHelper sharedNationHeaderColor];
     cell.delegate = self;
     Genre *genre = [nationDatas objectAtIndex:indexPath.row];
     NSString *json = [dataArray objectForKey:[NSString stringWithFormat:@"nation%ld",indexPath.row]] ;
@@ -452,30 +545,37 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 }
 -(void)pressedViewMore:(NSInteger)index{
     if ( self.filmViewController == nil) {
-        self.filmViewController= [[FilmViewController alloc] initWithGenreKey:[nationDatas objectAtIndex:index]];
-        self.filmViewController.delegate = self;
+        Genre *genre = [nationDatas objectAtIndex:index];
+        [self showNationDetailView:genre];
+    }
+//    Genre *genre = [nationDatas objectAtIndex:index];
+//    
+//    if (![_genre.key isEqualToString:genre.key]) {
+//        _genre = genre;
+//        _lbTitleView.text = _genre.title;
+//        [self.filmViewController resetListFilm:self.genre];
+//    }
+}
+-(void)pressedItemAtIndex:(SearchResultItem *)item{
+    if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
 
+    [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
+    }
+}
+
+-(void)showNationDetailView:(Genre *)genre{
+    if ( self.filmViewController == nil) {
+        _genre = genre;
+        _lbTitleView.text = _genre.title;
+        self.filmViewController= [[FilmViewController alloc] initWithGenreKey:genre];
+        self.filmViewController.delegate = self;
+        
         self.filmViewController.view.frame = CGRectMake(self.view.frame.size.width, 64, self.view.frame.size.width, self.view.frame.size.height - 64 - 50);
         [self.view addSubview: self.filmViewController.view];
         [UIView animateWithDuration:1.0 animations:^{
             self.filmViewController.view.frame = CGRectMake(0, 64, self.view.frame.size.width, self.view.frame.size.height - 64 - 50);
         }];
     }
-}
--(void)pressedItemAtIndex:(SearchResultItem *)item{
-    UIViewController *topVc =  [AppDelegate topMostController];
-    if ([topVc isKindOfClass:[PlayVideoViewController class]]) {
-        PlayVideoViewController *vc = (PlayVideoViewController*)topVc;
-        [vc prepareFilmData:item];
-        [vc scaleViewToOriginalSize];
-    }else{
-        PlayVideoViewController *vc = [[PlayVideoViewController alloc] initWithInfo:item];
-        [vc prepareFilmData:item];
-        vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
-        vc.view.backgroundColor = [UIColor clearColor];
-        [self presentViewController:vc animated:YES completion:nil];
-    }
-
 }
 #pragma mark - call php api
 -(void)callWebService{
@@ -574,15 +674,26 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 //
 //                            [self.tbFilm endUpdates];
                         }
-                        
+                        [_indicator stopAnimating];
                     });
                 });
             }
             
         });
     });
-    
+}
+- (void)networkChanged:(NSNotification *)notification
+{
+    RealReachability *reachability = (RealReachability *)notification.object;
+    ReachabilityStatus status = [reachability currentReachabilityStatus];
+    if (status != curStatus) {
+        curStatus = status;
+        NSLog(@"currentStatus:%@",@(status));
+        if (status == RealStatusViaWiFi || status == RealStatusViaWWAN) {
+            [self callWebService];
+            
+        }
+    }
     
 }
-
 @end

@@ -12,6 +12,8 @@
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 #import <MediaPlayer/MediaPlayer.h>
 #import "PlayVideoViewController.h"
+#import <RealReachability/RealReachability.h>
+@import Firebase;
 @interface AppDelegate ()
 
 @end
@@ -43,6 +45,10 @@
                                              forState:UIControlStateNormal];
     [[UITabBarItem appearance] setTitleTextAttributes:@{ NSForegroundColorAttributeName : [ColorSchemeHelper sharedNationHeaderColor] }
                                              forState:UIControlStateSelected];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
+    [GLobalRealReachability startNotifier];
+    [FIRApp configure];
+
     return [[FBSDKApplicationDelegate sharedInstance] application:application
                                     didFinishLaunchingWithOptions:launchOptions];
 }
@@ -78,7 +84,7 @@
         return UIInterfaceOrientationMaskPortrait;
 
     }else{
-        if (self.allowRotation) {
+        if (self.allowRotation && NO) {
             return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
         }
     }
@@ -112,5 +118,48 @@
                                                 sourceApplication:sourceApplication
                                                        annotation:annotation];
 }
+-(BOOL)canClick{
+//    if (self.playerViewController) {
+//        if (self.playerViewController.originSize) {
+//            return NO;
+//        }
+//        return YES;
+//    }
+    return YES;
+}
+-(void)showPlayer:(SearchResultItem *)item inView:(UIView *)view{
+    [[UIApplication sharedApplication] setStatusBarHidden:YES];
 
+    if (self.playerViewController) {
+        
+        [self.playerViewController prepareFilmData:item];
+       [self.playerViewController  scaleViewToOriginalSize];
+    }else{
+        self.playerViewController = [[PlayVideoViewController alloc] initWithInfo:item];
+        CGFloat width = CGRectGetWidth([[UIScreen mainScreen] bounds]);
+        CGFloat height = CGRectGetWidth([[UIScreen mainScreen] bounds]);
+        
+        self.playerViewController.view.frame = CGRectMake(width, height, width, height);
+        self.playerViewController.view.alpha = 0.0;
+
+        [self.playerViewController prepareFilmData:item];
+        [self.window addSubview:self.playerViewController.view];
+
+        [UIView animateWithDuration:0.5 animations:^{
+            self.playerViewController.view.frame = CGRectMake(0, 0, width, height);
+            self.playerViewController.view.alpha = 1.0;
+        } completion:^(BOOL finished) {
+            if (finished) {
+//                [view bringSubviewToFront:self.playerViewController.view];
+                [self.playerViewController scaleViewToOriginalSize];
+            }
+        }];
+    }
+}
+-(void)closePlayer{
+    [self.playerViewController.view removeFromSuperview];
+    self.playerViewController = nil;
+    [[UIApplication sharedApplication] setStatusBarHidden:NO];
+
+}
 @end

@@ -16,6 +16,7 @@
 @synthesize imglanscape;
 @synthesize thumbnail;
 @synthesize hasData;
+@synthesize total;
 -(id)initWithData: (NSDictionary *)data{
     self = [super init];
     if(self){
@@ -24,6 +25,9 @@
         subname = [data objectForKey:@"subname"];
         img = [data objectForKey:@"img"];
         imglanscape = [data objectForKey:@"img_landscpae"];
+        if ([data objectForKey:@"total"] != [NSNull null]) {
+            total = [[data objectForKey:@"total"] componentsSeparatedByString:@" "][0];
+        }
         thumbnail = nil;
         hasData = NO;
     }

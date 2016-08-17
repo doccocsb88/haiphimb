@@ -27,6 +27,7 @@
         self.info.desc = [[NSString alloc] initWithUTF8String:(const char *)sqlite3_column_text(statement, 11)];
         self.type = sqlite3_column_int(statement, 12);
         self.date = [[NSString alloc] initWithUTF8String:(const char *)sqlite3_column_text(statement, 13)];
+        self.currentEpsider = [[NSString alloc] initWithUTF8String:(const char *)sqlite3_column_text(statement, 14)];
 
     }
     return self;

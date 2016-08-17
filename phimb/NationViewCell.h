@@ -7,8 +7,11 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "SearchResultItem.h"
+
 @protocol NationFilmCellDelegate <NSObject>
 -(void)pressedViewMore:(NSInteger)index;
+-(void)pressedItemAtIndex:(SearchResultItem *)item;
 @end
 @interface NationViewCell : UITableViewCell
 @property (weak, nonatomic) IBOutlet UILabel *lbTitle;
@@ -17,5 +20,5 @@
 @property (strong, nonatomic) id<NationFilmCellDelegate>delegate;
 -(void)setcontentView:(NSString *)header jsonData:(NSString *)json atIndex:(NSInteger)index;
 -(void)setcontentView:(NSString *)header nationCode:(NSString *)nationCode complete:(void(^)(NSString *json))complete atIndex:(NSInteger)index;
-
+-(void)didSelectAtPoint:(UITouch *)point;
 @end

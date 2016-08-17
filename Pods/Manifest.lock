@@ -1,19 +1,54 @@
 PODS:
+  - Firebase/AdMob (3.2.1):
+    - Firebase/Analytics (= 3.2.1)
+    - Google-Mobile-Ads-SDK (= 7.8.1)
+  - Firebase/Analytics (3.2.1):
+    - FirebaseAnalytics (= 3.2.0)
+  - Firebase/Core (3.2.1):
+    - Firebase/Analytics (= 3.2.1)
+  - FirebaseAnalytics (3.2.0):
+    - FirebaseInstanceID (~> 1.0)
+    - GoogleInterchangeUtilities (~> 1.2)
+    - GoogleSymbolUtilities (~> 1.1)
+    - GoogleUtilities (~> 1.3)
+  - FirebaseInstanceID (1.0.6)
+  - Google-Mobile-Ads-SDK (7.8.1)
+  - GoogleInterchangeUtilities (1.2.1):
+    - GoogleSymbolUtilities (~> 1.0)
+  - GoogleSymbolUtilities (1.1.1)
+  - GoogleUtilities (1.3.1):
+    - GoogleSymbolUtilities (~> 1.0)
   - MarqueeLabel (2.7.5):
     - MarqueeLabel/ObjC (= 2.7.5)
   - MarqueeLabel/ObjC (2.7.5)
+  - RealReachability (1.1.7):
+    - RealReachability/Connection (= 1.1.7)
+    - RealReachability/Ping (= 1.1.7)
+  - RealReachability/Connection (1.1.7)
+  - RealReachability/Ping (1.1.7)
   - SDWebImage (3.7.5):
     - SDWebImage/Core (= 3.7.5)
   - SDWebImage/Core (3.7.5)
 
 DEPENDENCIES:
+  - Firebase/AdMob
+  - Firebase/Core
   - MarqueeLabel (~> 2.7)
+  - RealReachability
   - SDWebImage (~> 3.7)
 
 SPEC CHECKSUMS:
+  Firebase: 6c80ac28d59d06bfd9152a7b6ea17625ca93183d
+  FirebaseAnalytics: 6f75b04e6bfb8e0b6e9ef298e04c24eea3b13863
+  FirebaseInstanceID: d014d574053a2fe84478f12f7bae96979e7051bb
+  Google-Mobile-Ads-SDK: 3c2a6656117989469bfe7645640aa1de024a4c6c
+  GoogleInterchangeUtilities: def8415a862effc67d549d5b5b0b9c7a2f97d4de
+  GoogleSymbolUtilities: 33117db1b5f290c6fbf259585e4885b4c84b98d7
+  GoogleUtilities: 56c5ac05b7aa5dc417a1bb85221a9516e04d7032
   MarqueeLabel: bd476f1a91e4414a6aec4ea4096a9979e8c8c2ad
+  RealReachability: 8b6644c6b3145f7552ed83bffb52c49b0f3b55e3
   SDWebImage: 69c6303e3348fba97e03f65d65d4fbc26740f461
 
-PODFILE CHECKSUM: 6acf20e6e4a43e436a0b963156093af96fa37021
+PODFILE CHECKSUM: f53cdfe55527fef409e634ad1b91fb4ab67e7708
 
 COCOAPODS: 1.0.1

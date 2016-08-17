@@ -20,6 +20,9 @@
 #import "UserDataFilm.h"
 #import "MONActivityIndicatorView.h"
 #import "AppDelegate.h"
+#import "GuidePlayerView.h"
+#import "UserDataFilm.h"
+#import <GoogleMobileAds/GoogleMobileAds.h>
 #define BUTTON_PLAY_SIZE 40
 #define NAVBAR_HEIGHT 64
 NSString *const PlayMovieTabpped = @"PlayMovieTabpped";
@@ -39,39 +42,44 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     CGFloat playerHeight;
     CGFloat movieRatio;
     BOOL allowRotation;
+    NSArray *_serverA;
+    NSArray *_serverB;
+    NSTimer *_timer;
+    
 }
 @property (nonatomic ,strong)     NSURL *movieURL;
+@property (nonatomic ,strong)     NSIndexPath *curIndexPath;
 //= [NSURL URLWithString:@"http://techslides.com/demos/sample-videos/small.mp4"];
 @property (strong,nonatomic) FilmInfoDetails *infoDetail;
 @property (nonatomic,assign) NSInteger mpCurrentState;
 @property (strong, nonatomic)  UIView *ctrStyleView;
 
-@property (strong, nonatomic) MONActivityIndicatorView *movieIndicator;
 @property (strong, nonatomic) TabInfoView *infoView;
 @property (strong, nonatomic) TabRelateView *relateView;
 @property (strong, nonatomic) TabOverview *overviewView;
 @property (strong, nonatomic) TabCommentView *commentView;
 @property (strong, nonatomic) UIView *tabViewHightLight;
 //@property (strong, nonatomic) UIView *bgHeadrView;
+@property (strong, nonatomic) MONActivityIndicatorView *movieIndicator;
 
 @property (strong, nonatomic) UIScrollView *scrollView;
 @property (strong, nonatomic)  UIView *tabviewPanel;
 @property (nonatomic, assign) CGPoint preVelocity;
 @property (nonatomic,assign) BOOL showPanel;
-@property (nonatomic,assign) BOOL originSize;
 @property (nonatomic,strong) EmployeeDbUtil *dbManager;
-@property (nonatomic, strong) UIButton *btnClose;
+//@property (nonatomic, strong) UIButton *btnClose;
 @property (strong, nonatomic) GUIPlayerView *playerView;
-
-//@property (nonatomic, assign) nsin
+@property (strong, nonatomic) GuidePlayerView *guideView;
+@property (strong, nonatomic) UserDataFilm *previousEpsider;
+@property (nonatomic, strong) GADBannerView *bannerView;
 
 @end
 
 @implementation PlayVideoViewController
 //@synthesize playvideoDelegate;
 @synthesize filmInfo;
-@synthesize movieURL,rightButton,originSize;
-@synthesize playerView;
+@synthesize movieURL, curIndexPath,rightButton,originSize;
+@synthesize playerView, movieIndicator;
 //@synthesize btnTabInfo;
 //@synthesize btnTabRelative;
 -(id)init{
@@ -90,21 +98,41 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         self.view.backgroundColor = [UIColor clearColor];
         self.mpCurrentState = MPMoviePlaybackStateStopped;
          ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+        NSLog(@"filmID : %ld",filmInfo._id);
+
     }
     return self;
 }
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = [UIColor clearColor];
+//    self.view.backgroundColor = [UIColor redColor ];
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+    if ([self respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)])
+    {
+        [self prefersStatusBarHidden];
+        [self performSelector:@selector(setNeedsStatusBarAppearanceUpdate)];
+    }
+    else
+    {
+        // iOS 6
+        [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationSlide];
+    }
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(didRotate:)
+                                                 name:@"UIDeviceOrientationDidChangeNotification"
+                                               object:nil];
     ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
     [self supportedInterfaceOrientations];
-    
     [self shouldAutorotate];
-    
+    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"guideplayer"] == nil) {
+        _guideView = [[GuidePlayerView alloc] initWithFrame:self.view.bounds];
+        [self.view addSubview:_guideView];
+    }
     [[UIApplication sharedApplication] setStatusBarOrientation:UIInterfaceOrientationPortrait animated:NO];
     originSize = YES;
     self.dbManager = [[EmployeeDbUtil alloc] init];
     [self.dbManager initDatabase];
+    NSLog(@"filmID : %ld",filmInfo._id);
     [self setupGestures];
    
     NSLog(@"marginTop %f",marginTop);
@@ -112,6 +140,64 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
   
 //    [self callWebService];
     [self initViews];
+    [self addIndicator];
+    self.bannerView = [[GADBannerView alloc] initWithAdSize:GADAdSizeFromCGSize(CGSizeMake(320, 50))];
+    self.bannerView.frame= CGRectMake(0, self.view.frame.size.height - 50, self.view.frame.size.width, 50);
+    
+    self.bannerView.adUnitID = @"ca-app-pub-3940256099942544/2934735716";
+    self.bannerView.rootViewController = self;
+    
+    GADRequest *request = [GADRequest request];
+    // Requests test ads on devices you specify. Your test device ID is printed to the console when
+    // an ad request is made. GADBannerView automatically returns test ads when running on a
+    // simulator.
+    request.testDevices = @[
+                            @"2077ef9a63d2b398840261c8221a0c9a"  // Eric's iPod Touch
+                            ];
+    [self.bannerView loadRequest:request];
+    [self.view addSubview:self.bannerView];
+}
+- (BOOL)prefersStatusBarHidden {
+    return originSize;
+}
+-(void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    if (_guideView) {
+        [self.view bringSubviewToFront:_guideView];
+
+    }
+    [_btnTabRelative sendActionsForControlEvents:UIControlEventTouchUpInside];
+//    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+//    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+//        // portrait
+//        
+//    } else {
+//        // landscape
+//        //        [playerView  toggleFullscreen:playerView.fullscreenButton];
+//        
+////    self.view.transform = CGAffineTransformMakeRotation(90 * M_PI/180);
+//        
+//    }
+////    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+////    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+//    self.view.backgroundColor = [UIColor redColor];
+    NSLog(@"filmID : %ld",filmInfo._id);
+    self.previousEpsider = [self.dbManager getUserDataByFilmId:filmInfo._id];
+    if (self.previousEpsider) {
+        NSLog(@"current: %@",self.previousEpsider.currentEpsider);
+
+    }
+
+}
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+   
+}
+
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    return UIInterfaceOrientationIsPortrait(interfaceOrientation);
 }
 -(void) initParams{
     _currentTab = TAB_INFO;
@@ -121,17 +207,17 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     infoMarginTop = marginTop + playerHeight;
     btnTabWidth = viewWidth/3;
     genraData = @[
-                         [Genre itemWithTitle:@"Hành Động" withKey:@"hanh-dong"],
-                         [Genre itemWithTitle:@"Phiêu Lưu" withKey:@"phieu-luu"],
-                         [Genre itemWithTitle:@"Tình Cảm" withKey:@"tinh-cam"],
-                         [Genre itemWithTitle:@"Tâm Lý" withKey:@"tam-ly"],
-                         [Genre itemWithTitle:@"Võ Thuật" withKey:@"vo-thuat"],
-                         [Genre itemWithTitle:@"Cổ trang" withKey:@"co-trang"],
-                         [Genre itemWithTitle:@"Hài Hước" withKey:@"hai-huoc"],
-                         [Genre itemWithTitle:@"Ca Nhạc" withKey:@"ca-nhac"],
-                         [Genre itemWithTitle:@"Hài Kịch" withKey:@"hai-kich"],
-                         [Genre itemWithTitle:@"Hình Sự" withKey:@"hinh-su"],
-                         [Genre itemWithTitle:@"Chiến Tranh " withKey:@"chien-tranh"]];
+                  [Genre itemWithTitle:@"Action Films" withKey:@"hanh-dong"],
+                  [Genre itemWithTitle:@"Adventure Films" withKey:@"phieu-luu"],
+                  [Genre itemWithTitle:@"Romance Films" withKey:@"tinh-cam"],
+                  [Genre itemWithTitle:@"Drama Films" withKey:@"tam-ly"],
+                  [Genre itemWithTitle:@"Kungfu Films" withKey:@"vo-thuat"],
+                  [Genre itemWithTitle:@"Costume Films" withKey:@"co-trang"],
+                  [Genre itemWithTitle:@"Funny Films" withKey:@"hai-huoc"],
+                  [Genre itemWithTitle:@"Musical Films" withKey:@"ca-nhac"],
+                  [Genre itemWithTitle:@"Comedy Films" withKey:@"hai-kich"],
+                  [Genre itemWithTitle:@"Crime Films" withKey:@"hinh-su"],
+                  [Genre itemWithTitle:@"War Films " withKey:@"chien-tranh"]];
 
 }
 -(void)initViews{
@@ -151,33 +237,9 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     [self initNotification];
 
 }
--(void)viewWillAppear:(BOOL)animated{
-    [super viewWillAppear:animated];
-   // [SlideNavigationController sharedInstance].lastControlelr = 2;
 
-}
 - (void)styleNavBar {
-//    [self.navigationController setNavigationBarHidden:YES animated:NO];
-//    
-//
-//    _btnCancel = [[UIButton alloc] initWithFrame:CGRectMake(5, 20, 45, 44)];
-//    [_btnCancel setTitle:@"Back" forState:UIControlStateNormal];
-//    _btnCancel.titleLabel.font = [UIFont systemFontOfSize:16.f];
-////    [_btnCancel setTitleEdgeInsets:UIEdgeInsetsMake(0, -10, 0,10)];
-//    [_btnCancel addTarget:self action:@selector(pressCancel:) forControlEvents:UIControlEventTouchUpInside];
-//
-//    _bgHeadrView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, viewWidth, 64) ];
-//    [_bgHeadrView addSubview:_btnCancel];
-//    _bgHeadrView.backgroundColor = [ColorSchemeHelper     sharedNationHeaderColor];
-//    [self.view addSubview:_bgHeadrView];
-//    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(50, 20, viewWidth-100, 44)];
-//    title.text = @"Movie Information";
-//    title.textAlignment = NSTextAlignmentCenter;
-//    title.textColor = [UIColor whiteColor];
-//    title.backgroundColor = [UIColor clearColor];
-//    title.font= [UIFont fontWithName:@"HelveticaNeue-Bold" size:16.0];
-//    [_bgHeadrView addSubview:title];
-////    [header addSubview:rightButton];
+
 }
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
@@ -222,21 +284,21 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 #pragma mark - InitView
 -(void)initMovieIndicator{
 
-    _movieIndicator= [[MONActivityIndicatorView alloc] init];
-  
-    _movieIndicator.delegate = self;
-    _movieIndicator.numberOfCircles = 3;
-    _movieIndicator.radius = 10;
-    _movieIndicator.internalSpacing = 3;
-    CGSize size = [_movieIndicator intrinsicContentSize];
-    _movieIndicator.frame = CGRectMake((viewWidth-size.width)/2, marginTop + (playerHeight- size.height)/2, size.width, size.height);
-    [_movieIndicator startAnimating];
-    
-    [self.view addSubview:_movieIndicator];
-//    [self placeAtTheCenterWithView:_movieIndicator];
-    
-//    [NSTimer scheduledTimerWithTimeInterval:7 target:indicatorView selector:@selector(stopAnimating) userInfo:nil repeats:NO];
-    [NSTimer scheduledTimerWithTimeInterval:9 target:_movieIndicator selector:@selector(startAnimating) userInfo:nil repeats:NO];
+//    _movieIndicator= [[MONActivityIndicatorView alloc] init];
+//  
+//    _movieIndicator.delegate = self;
+//    _movieIndicator.numberOfCircles = 3;
+//    _movieIndicator.radius = 10;
+//    _movieIndicator.internalSpacing = 3;
+//    CGSize size = [_movieIndicator intrinsicContentSize];
+//    _movieIndicator.frame = CGRectMake((viewWidth-size.width)/2, marginTop + (playerHeight- size.height)/2, size.width, size.height);
+//    [_movieIndicator startAnimating];
+//    
+//    [self.view addSubview:_movieIndicator];
+////    [self placeAtTheCenterWithView:_movieIndicator];
+//    
+////    [NSTimer scheduledTimerWithTimeInterval:7 target:indicatorView selector:@selector(stopAnimating) userInfo:nil repeats:NO];
+//    [NSTimer scheduledTimerWithTimeInterval:9 target:_movieIndicator selector:@selector(startAnimating) userInfo:nil repeats:NO];
 }
 
 
@@ -256,19 +318,30 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 -(void)initMoviePlayerView{
 
 
-    self.btnClose = [[UIButton alloc] initWithFrame:CGRectMake(-30, -30, 30, 30)];
-    [self.btnClose setTitle:@"X" forState:UIControlStateNormal];
-    self.btnClose.backgroundColor = [UIColor redColor];
-    [self.view addSubview:self.btnClose];
-    [self.btnClose addTarget:self action:@selector(pressedClose:) forControlEvents:UIControlEventTouchUpInside];
+//    self.btnClose = [[UIButton alloc] initWithFrame:CGRectMake(-20, -20, 40, 40)];
+//    UIImageView *bgView = [[UIImageView alloc] initWithFrame:CGRectMake(5, 5, 30, 30)];
+//    bgView.layer.cornerRadius = 15.0;
+////    bgView.layer.cornerRadius = 20.0;
+//    bgView.layer.masksToBounds = YES;
+//    bgView.layer.borderColor = [UIColor whiteColor].CGColor;
+//    bgView.layer.borderWidth = 1.0;
+//    bgView.backgroundColor = [UIColor redColor];
+//    bgView.contentMode = UIViewContentModeScaleAspectFit;
+//    bgView.image = [UIImage imageNamed:@"ic_button_close.png"];
+//    [self.btnClose addSubview:bgView];
+//    bgView.imageEdgeInsets = UIEdgeInsetsMake(10, 10, 10, 10);
+//    [self.btnClose setImage:[UIImage imageNamed:@"ic_button_close.png"] forState:UIControlStateNormal];
+//    [self.view addSubview:self.btnClose];
+//    [self.btnClose addTarget:self action:@selector(pressedClose:) forControlEvents:UIControlEventTouchUpInside];
     //
     CGFloat width = [UIScreen mainScreen].bounds.size.width;
 //
     playerView = [[GUIPlayerView alloc] initWithFrame:CGRectMake(0, 0, width, playerHeight)];
+    [playerView setTintColor:[UIColor clearColor]];
+    [playerView setBufferTintColor:[UIColor redColor]];
     [playerView setDelegate:self];
-    
     [[self view] addSubview:playerView];
-
+   
 }
 -(void)initPlayFilmController{
 
@@ -388,20 +461,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 
     
 }
--(void)createControllStyleView{
-    CGFloat ctrStyleWidth=viewWidth  - 60;
-    self.ctrStyleView= [[UIView alloc] initWithFrame:CGRectMake(  30, playerHeight - 35, ctrStyleWidth, 30)];
-    self.ctrStyleView.backgroundColor = [UIColor colorWithRed:0.4f green:0.55f blue:0.66f alpha:0.5f];
-    UIButton *btnFullScreen = [[UIButton alloc] initWithFrame:CGRectMake(ctrStyleWidth - 40, 0, 40, 30)];
-    [btnFullScreen setTitle:@"Full" forState:UIControlStateNormal];
-    [btnFullScreen addTarget:self action:@selector(pressedFullScreen:) forControlEvents:UIControlEventTouchUpInside];
-    [self.ctrStyleView addSubview:btnFullScreen];
-//    return nil;
-    
-}
--(void)pressedFullScreen:(id)button{
-    [self.view bringSubviewToFront:self.ctrStyleView];
-}
+
 -(void)setupGestures {
     UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveTabPanel:)];
     [panRecognizer setMinimumNumberOfTouches:1];
@@ -409,13 +469,18 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     [panRecognizer setDelegate:self];
     
     [self.view addGestureRecognizer:panRecognizer];
+    UISwipeGestureRecognizer *gestureRecognizer = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeHandler:)];
+    [gestureRecognizer setDirection:(UISwipeGestureRecognizerDirectionRight)];
+    [self.view addGestureRecognizer:gestureRecognizer];
 }
-
+-(void)swipeHandler:(UISwipeGestureRecognizer *)recognizer {
+    NSLog(@"Swipe received.");
+}
 -(void)prepareFilmData : (SearchResultItem *)item{
     filmInfo = item;
    // _previewImage.image = [UIImage imageNamed:@""];
     //
-    [_infoView setInfoThumbnail:filmInfo.thumbnail];
+    [_infoView setInfoThumbnail:filmInfo.thumbnail andUrl:filmInfo.img];
     if(filmInfo.hasData==NO){
         NSString *url =@"";
         if(filmInfo.imglanscape &&  ![filmInfo.imglanscape isEqualToString:@""]){
@@ -441,32 +506,41 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     [self callWebService];
 }
 #pragma Mark - TouchNotification
-
-- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event{
-    NSLog(@"touchesEnded %d",originSize);
-    if (!originSize) {
-        NSDictionary *userInfo = [NSDictionary dictionaryWithObject:touches forKey:@"touchesKey"];
-        
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"playmovieTouch" object:nil userInfo:userInfo];
-        for (UITouch *aTouch in touches) {
-            if (aTouch.tapCount >= 2) {
-                // The view responds to the tap
-                NSLog(@"multiTouch");
-            }else{
-                NSLog(@"singleTouch");
-            }
-        }
-    }
-}
+//
+//- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event{
+//    NSLog(@"touchesEnded %d",originSize);
+//    if (!originSize) {
+////        NSDictionary *userInfo = [NSDictionary dictionaryWithObject:touches forKey:@"touchesKey"];
+////        
+////        [[NSNotificationCenter defaultCenter] postNotificationName:@"playmovieTouch" object:nil userInfo:userInfo];
+////        for (UITouch *aTouch in touches) {
+////            if (aTouch.tapCount >= 2) {
+////                // The view responds to the tap
+////                NSLog(@"multiTouch");
+////            }else{
+////                NSLog(@"singleTouch");
+////            }
+////        }
+//    }
+//}
 #pragma mark - Action
 
 -(void)moveTabPanel:(id)sender {
+    if (playerView.fullscreen) {
+        return;
+    }
     [[[(UITapGestureRecognizer*)sender view] layer] removeAllAnimations];
     CGPoint currentlocation = [sender locationInView:self.view];
-
+    
     CGPoint translatedPoint = [(UIPanGestureRecognizer*)sender translationInView:self.view];
     CGPoint velocity = [(UIPanGestureRecognizer*)sender velocityInView:[sender view]];
+   
+        
     
+
+    if (self.view.frame.origin.y == 0 && (currentlocation.y < 0 || currentlocation.y > playerView.frame.size.height)) {
+        return;
+    }
     if([(UIPanGestureRecognizer*)sender state] == UIGestureRecognizerStateBegan) {
        // UIView *childView = nil;
         
@@ -486,13 +560,13 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     }
     
     if([(UIPanGestureRecognizer*)sender state] == UIGestureRecognizerStateEnded) {
-        
-        if(velocity.x > 0) {
-             NSLog(@"gesture went right");
-        } else {
-             NSLog(@"gesture went left");
+        if (originSize == NO) {
+            if (self.view.frame.origin.x < self.view.frame.size.width/6) {
+                [self performSelector:@selector(pressedClose:) withObject:nil afterDelay:0];        }
+            self.playerView.alpha = 1;
         }
        
+
         if (!_showPanel) {
             [self moveTabPanelToOriginalPosition];
         } else {
@@ -512,25 +586,44 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
                 [self pressRelateTab:nil];
             }
         }
-        CGFloat curW = self.playerView.frame.size.width;
-        CGFloat curY = self.playerView.frame.origin.y + (curW/movieRatio + 100);
-        if (curW > viewWidth*2/3 ||  curY < viewHeight) {
+        CGFloat curW = self.view.frame.size.width;
+        CGFloat curY = self.view.frame.origin.y ;
+        if (curW > viewWidth*2/3 ||  curY < viewHeight/2) {
             [self scaleViewToOriginalSize];
             
         }else{
-            originSize = NO;
+            [self scaleViewToMinimumSize];
         }
     }
     
     if([(UIPanGestureRecognizer*)sender state] == UIGestureRecognizerStateChanged) {
         if(velocity.x > 0) {
-            // NSLog(@"gesture went right");
+             NSLog(@"gesture went right");
         } else {
-            // NSLog(@"gesture went left");
+             NSLog(@"gesture went left");
         }
-
+        if (velocity.x > velocity.y) {
+            
+        }
         CGFloat infoPos = _infoView.frame.size.height + _infoView.frame.origin.y;
         if(currentlocation.y < infoPos){
+            CGFloat deltaX = velocity.x - _preVelocity.x;
+            CGFloat delta = velocity.y - _preVelocity.y;
+
+            
+            if (deltaX > delta && originSize == NO) {
+                if (velocity.x < 0) {
+                    if (self.view.frame.origin.x + velocity.x/20 > 0) {
+                        self.view.frame = CGRectMake(self.view.frame.origin.x + velocity.x/20, self.view.frame.origin.y, self.view.frame.size.width, self.view.frame.size.height);
+                        self.playerView.alpha = self.playerView.alpha - 0.01;
+                    }else{
+                        [self performSelector:@selector(pressedClose:) withObject:nil afterDelay:0];
+                        
+                    }
+                }
+                
+                
+            }else{
             CGFloat delta = velocity.y - _preVelocity.y;
             if(abs(delta)>20 && velocity.y){
                 if(velocity.y > 0){
@@ -543,6 +636,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
                 _preVelocity = velocity;
             }
             NSLog(@"deltaYYY%f",delta);
+            }
             
             
         }else  if(currentlocation.y>=infoMarginTop+playerHeight+30){
@@ -550,41 +644,99 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
             
             if (_currentTab== TAB_COMMENT && velocity.x > 0) {
                 
-                _showPanel = abs(_commentView.center.x - self.view.frame.size.width/2) > self.view.frame.size.width/2;
-                _overviewView.center = CGPointMake(_overviewView.center.x + translatedPoint.x, _overviewView.center.y);
-                _relateView.center = CGPointMake(_relateView.center.x + translatedPoint.x, _relateView.center.y);
-                _commentView.center = CGPointMake(_commentView.center.x + translatedPoint.x, _commentView.center.y);
-                _tabViewHightLight.center =  CGPointMake(_tabViewHightLight.center.x - translatedPoint.x/3, _tabViewHightLight.center.y);
-                NSLog(@"currentTabView 1 %d",_showPanel);
+//                _showPanel = abs(_commentView.center.x - self.view.frame.size.width/2) > self.view.frame.size.width/3;
+//                _overviewView.center = CGPointMake(_overviewView.center.x + translatedPoint.x, _overviewView.center.y);
+//                _relateView.center = CGPointMake(_relateView.center.x + translatedPoint.x, _relateView.center.y);
+//                _commentView.center = CGPointMake(_commentView.center.x + translatedPoint.x, _commentView.center.y);
+//                _tabViewHightLight.center =  CGPointMake(_tabViewHightLight.center.x - translatedPoint.x/3, _tabViewHightLight.center.y);
+//                NSLog(@"currentTabView 1 %d",_showPanel);
                 
             }else if(_currentTab == TAB_INFO && velocity.x < 0){
                 NSLog(@"currentTabView 2");
                 
-                _showPanel = abs(_overviewView.center.x - self.view.frame.size.width/2) > self.view.frame.size.width/2;
-                _overviewView.center = CGPointMake(_overviewView.center.x + translatedPoint.x, _overviewView.center.y);
-                _relateView.center = CGPointMake(_relateView.center.x + translatedPoint.x, _relateView.center.y);
-                _commentView.center = CGPointMake(_commentView.center.x + translatedPoint.x, _commentView.center.y);
-                
-                _tabViewHightLight.center =  CGPointMake(_tabViewHightLight.center.x - translatedPoint.x/3, _tabViewHightLight.center.y);
+//                _showPanel = abs(_overviewView.center.x - self.view.frame.size.width/2) > self.view.frame.size.width/3;
+//                _overviewView.center = CGPointMake(_overviewView.center.x + translatedPoint.x, _overviewView.center.y);
+//                _relateView.center = CGPointMake(_relateView.center.x + translatedPoint.x, _relateView.center.y);
+//                _commentView.center = CGPointMake(_commentView.center.x + translatedPoint.x, _commentView.center.y);
+//                
+//                _tabViewHightLight.center =  CGPointMake(_tabViewHightLight.center.x - translatedPoint.x/3, _tabViewHightLight.center.y);
                 
             }else if(_currentTab == TAB_RELATIVE){
                 NSLog(@"currentTabView 3");
-                _showPanel = abs(_relateView.center.x - self.view.frame.size.width/2) > self.view.frame.size.width/2;
-                _overviewView.center = CGPointMake(_overviewView.center.x + translatedPoint.x, _overviewView.center.y);
-                _relateView.center = CGPointMake(_relateView.center.x + translatedPoint.x, _relateView.center.y);
-                _commentView.center = CGPointMake(_commentView.center.x + translatedPoint.x, _commentView.center.y);
-                
-                _tabViewHightLight.center =  CGPointMake(_tabViewHightLight.center.x - translatedPoint.x/3, _tabViewHightLight.center.y);
+//                CGFloat centerX = _relateView.center.x;
+//                _showPanel = abs(_relateView.center.x - self.view.frame.size.width/2) > self.view.frame.size.width/3 ;
+//                _overviewView.center = CGPointMake(_overviewView.center.x + translatedPoint.x, _overviewView.center.y);
+//                _relateView.center = CGPointMake(_relateView.center.x + translatedPoint.x, _relateView.center.y);
+//                _commentView.center = CGPointMake(_commentView.center.x + translatedPoint.x, _commentView.center.y);
+//                
+//                _tabViewHightLight.center =  CGPointMake(_tabViewHightLight.center.x - translatedPoint.x/3, _tabViewHightLight.center.y);
             }else{
                 NSLog(@"currentTabView 4");
                 _showPanel = FALSE;
                 
             }
             [(UIPanGestureRecognizer*)sender setTranslation:CGPointMake(0,0) inView:self.view];
-            
+            _preVelocity = velocity;
             
         }
     }
+    
+}
+-(void)scaleViewToMinimumSize{
+   originSize = NO;
+    CGFloat toX = viewWidth/3;
+    CGFloat newW = viewWidth - toX;
+    CGFloat pRatio = viewWidth/viewHeight;
+
+    CGFloat toY = viewHeight-(playerHeight*(newW/viewWidth) + 50) ;
+    CGRect infoFrame = _infoView.frame;
+    CGRect scrollFrame = _scrollView.frame;
+    CGRect tabFrame = _tabviewPanel.frame;
+    
+    [UIView animateWithDuration:0.3f animations:^{
+//        self.view.frame = CGRectMake(0, 0, viewWidth, viewHeight);
+        [self.view setFrame:CGRectMake(toX, toY, newW, viewHeight/pRatio)];
+        CGRect playerFrame = self.playerView.frame;
+        self.playerView.frame = CGRectMake(0, playerFrame.origin.y, newW, playerHeight*(newW/viewWidth));
+        [playerView updatePlayerLayer];
+        CGRect preFrame = self.view.frame;
+
+        _infoView.frame = CGRectMake(infoFrame.origin.x, toY+newW/pRatio, infoFrame.size.width, infoFrame.size.height);
+        _tabviewPanel.frame= CGRectMake(tabFrame.origin.x, toY+newW/pRatio+infoFrame.size.height, tabFrame.size.width, tabFrame.size.height);
+        _scrollView.frame= CGRectMake(scrollFrame.origin.x, toY+newW/pRatio+infoFrame.size.height +tabFrame.size.height, scrollFrame.size.width, scrollFrame.size.height);
+        
+        //    _movieIndicator.frame =CGRectMake(toX,toY, newW, newH);
+        _btnPlay.center = playerView.center;
+        _btnPlay.transform = CGAffineTransformMakeScale(newW/viewWidth,newW/viewWidth);
+        //    CGSize size = [_movieIndicator intrinsicContentSize];
+        //    _movieIndicator.center = playerView.center;
+        //makeviewtransparent
+        CGFloat alpha  = 0;
+        //    _bgHeadrView.alpha = alpha;÷
+        _infoView.alpha = alpha;
+        _scrollView.alpha = alpha;
+        _tabviewPanel.alpha = alpha;
+//        self.btnClose.frame = CGRectMake(playerView.frame.origin.x - 20, playerView.frame.origin.y - 20, 40, 40);
+//        self.btnClose.hidden = NO;
+//        [self.view bringSubviewToFront:self.btnClose];
+        
+    } completion:^(BOOL finished){
+        [self.view setFrame:CGRectMake(toX, toY, newW, playerHeight*pRatio)];
+        if ([self respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)])
+        {
+            [self prefersStatusBarHidden];
+            [self performSelector:@selector(setNeedsStatusBarAppearanceUpdate)];
+        }
+        else
+        {
+            // iOS 6
+            [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationSlide];
+        }
+        self.playerView.hasController = NO;
+
+        [self.playerView hideControllers];
+    }];
+
 }
 -(void)scaleViewToOriginalSize{
     originSize = YES;
@@ -592,7 +744,9 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     [UIView animateWithDuration:0.3f animations:^{
         self.view.frame = CGRectMake(0, 0, viewWidth, viewHeight);
         [self.playerView setFrame:CGRectMake(0, marginTop, viewWidth, playerHeight)];
-        [self.movieIndicator setFrame:CGRectMake(0, marginTop, viewWidth, playerHeight)];
+        [playerView updatePlayerLayer];
+
+//        [self.movieIndicator setFrame:CGRectMake(0, marginTop, viewWidth, playerHeight)];
 //        [self.bgHeadrView setFrame:CGRectMake(0, 0, viewWidth, 64)];
        
         CGFloat scrollH =viewHeight - infoMarginTop - (playerHeight+30);
@@ -602,15 +756,19 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         [self.scrollView setFrame:CGRectMake(0, infoMarginTop + playerHeight+30 + _infoView.frame.size.height, viewWidth*3, scrollH)];
         [self.btnPlay setFrame:CGRectMake(viewWidth/2 - BUTTON_PLAY_SIZE/2, marginTop + viewHeight/8 - BUTTON_PLAY_SIZE/2, BUTTON_PLAY_SIZE, BUTTON_PLAY_SIZE)];
         self.btnPlay.center = self.playerView.center;
-        CGSize size = [_movieIndicator intrinsicContentSize];
-        _movieIndicator.frame = CGRectMake((viewWidth-size.width)/2, marginTop + (playerHeight - size.height)/2, size.width, size.height);
-        _infoView.alpha = 1.f;
+//        CGSize size = [_movieIndicator intrinsicContentSize];
+//        _movieIndicator.frame = CGRectMake((viewWidth-size.width)/2, marginTop + (playerHeight - size.height)/2, size.width, size.height);
+//        self.btnClose.frame =  CGRectMake(-20, -20, 40, 40);
+//        self.btnClose.hidden = YES;
+//        _infoView.alpha = 1.f;
         _scrollView.alpha = 1.f;
         _tabviewPanel.alpha = 1.f;
+        _infoView.alpha = 1.0;
 //        [self.bgHeadrView setAlpha:1.f];
 
     } completion:^(BOOL finished){
-        
+        self.playerView.hasController = YES;
+        [self.playerView showControllers];
 
     }];
     
@@ -618,7 +776,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 }
 -(void)scalePlayView:(CGPoint)velectity{
     CGFloat ratio = viewWidth/viewHeight;
-    CGRect preFrame = self.playerView.frame;
+    CGRect preFrame = self.view.frame;
     CGFloat deltaX = 0;
     CGFloat deltaY = 0;
     CGFloat deltaH = 0;
@@ -634,8 +792,8 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         deltaH = velectity.y/20;
 
     }
-    deltaW = ratio*deltaH;
-    deltaX = ratio*deltaY;
+    deltaW = ratio*deltaH/2;
+    deltaX = ratio*deltaY/2;
     CGFloat toY =  preFrame.origin.y + deltaY;
     CGFloat toX = preFrame.origin.x + deltaX;
     
@@ -652,10 +810,10 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         newH =  viewHeight - (newW/pRatio+10);
         
     }
-    if(toY<64){
-        toY = 64;
-    }else if(toY>viewHeight-(newW/pRatio+10)){
-        toY=viewHeight-(newW/pRatio+10);
+    if(toY<0){
+        toY = 0;
+    }else if(toY>viewHeight-(newW/pRatio+ 50)){
+        toY=viewHeight-(newW/pRatio + 50) ;
     }
     deltaY = toY - preFrame.origin.y;
     if(toX>viewWidth/3){
@@ -664,13 +822,19 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         toX = 0;
     }
 //    self.view.frame = CGRectMake(toX,toY, newW, newH);
-    playerView.frame =CGRectMake(toX,toY, newW, newW/pRatio);
-//    CGFloat alpha  = _bgHeadrView.alpha;
+    CGRect playerFrame = playerView.frame;
+
+    playerView.frame = CGRectMake(playerFrame.origin.x,playerFrame.origin.y, newW, newW/pRatio);
+    self.view.frame =  CGRectMake(toX,toY, newW, newW/pRatio);
+   
+
+    [playerView updatePlayerLayer];
+    CGFloat alpha  = (viewHeight - toY)/viewHeight;
 //    if (velectity.y>0) {
-//        alpha=alpha-0.05f;
+//        alpha=alpha-0.005f;
 //        alpha = alpha<0?0:alpha;
 //    }else{
-//        alpha=alpha+0.05f;
+//        alpha=alpha+0.005f;
 //        alpha=alpha>1?1:alpha;
 //    }
 //    CGRect headerFrame = _bgHeadrView.frame;
@@ -688,29 +852,28 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 //    }else if(movieY>64){
 //        movieY = 64;
 //    }
-//    playerView.frame = CGRectMake(movieFrame.origin.x+deltaX, movieFrame.origin.y+deltaY, newW,newW/pRatio);
 //    _bgHeadrView.frame = CGRectMake(headerFrame.origin.x+(toX-preFrame.origin.x), headerFrame.origin.y+(toY-preFrame.origin.y) , headerFrame.size.width, headerFrame.size.height);
 
-    _infoView.frame = CGRectMake(infoFrame.origin.x+(toX-preFrame.origin.x), toY+newW/pRatio, infoFrame.size.width, infoFrame.size.height);
-      _tabviewPanel.frame= CGRectMake(tabFrame.origin.x+(toX-preFrame.origin.x), toY+newW/pRatio+infoFrame.size.height, tabFrame.size.width, tabFrame.size.height);
-    _scrollView.frame= CGRectMake(scrollFrame.origin.x+(toX-preFrame.origin.x), toY+newW/pRatio+infoFrame.size.height +tabFrame.size.height, scrollFrame.size.width, scrollFrame.size.height);
+    _infoView.frame = CGRectMake(infoFrame.origin.x, playerFrame.origin.y+newW/pRatio, infoFrame.size.width, infoFrame.size.height);
+    _tabviewPanel.frame= CGRectMake(tabFrame.origin.x, playerFrame.origin.y+newW/pRatio+infoFrame.size.height, tabFrame.size.width, tabFrame.size.height);
+    _scrollView.frame= CGRectMake(scrollFrame.origin.x, playerFrame.origin.y+newW/pRatio+infoFrame.size.height +tabFrame.size.height, scrollFrame.size.width, scrollFrame.size.height);
   
 //    _movieIndicator.frame =CGRectMake(toX,toY, newW, newH);
     _btnPlay.center = playerView.center;
     _btnPlay.transform = CGAffineTransformMakeScale(newW/viewWidth,newW/viewWidth);
-    CGSize size = [_movieIndicator intrinsicContentSize];
-    _movieIndicator.frame = CGRectMake(toX+(newW-size.width)/2, toY + (newW/pRatio - size.height)/2, size.width, size.height);
+//    CGSize size = [_movieIndicator intrinsicContentSize];
+//    _movieIndicator.center = playerView.center;
     //makeviewtransparent
 //    if(preFrame.origin.y>viewHeight/2){
 //        alpha = 0.f;
 //    }
-//    _bgHeadrView.alpha = alpha;
-//    _infoView.alpha = alpha;
-//    _scrollView.alpha = alpha;
-//    _tabviewPanel.alpha = alpha;
-    self.btnClose.frame = CGRectMake(playerView.frame.origin.x - 30, playerView.frame.origin.y - 30, 30, 30);
-    self.btnClose.backgroundColor = [UIColor redColor];
-    [self.view bringSubviewToFront:self.btnClose];
+//    _bgHeadrView.alpha = alpha;÷
+    _infoView.alpha = alpha;
+    _scrollView.alpha = alpha;
+    _tabviewPanel.alpha = alpha;
+//    self.btnClose.frame = CGRectMake(playerView.frame.origin.x - 20, playerView.frame.origin.y - 20, 40, 40);
+//    self.btnClose.hidden = NO;
+//    [self.view bringSubviewToFront:self.btnClose];
 }
 -(void)closeLoginView{
     [self.view bringSubviewToFront:_commentView];
@@ -858,6 +1021,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         [[self navigationController] setNavigationBarHidden:NO animated:YES];
 
        player.fullscreen = NO;
+        
 //        [self.ctrStyleView removeFromSuperview];
         NSLog(@"PlayBackFinished");
     }
@@ -953,6 +1117,13 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     data.info =_infoDetail;
     data.type = 1;
     data.date = @"01-01-2015";
+    if (curIndexPath.section == 0) {
+        data.currentEpsider = [NSString stringWithFormat:@"1-%d",playerView.current];
+
+    }else{
+        data.currentEpsider = [NSString stringWithFormat:@"2-%d",playerView.current];
+
+    }
     [self.dbManager saveFilmUserData:data];
 }
 #pragma textFieldDelegate
@@ -990,13 +1161,13 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     NSString *deviceString =[[UIDevice currentDevice] platformString];
     if ([deviceString containsString:@"iPad"]) {
         //panelWidth = self.view.frame.size.width - 320;
-        playerHeight = playerHeight + viewHeight/8;
+        playerHeight =   viewHeight/3;
     }else{
         //panelWidth = PANEL_WIDTH;
         UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
         if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
             // portrait
-            playerHeight = viewHeight/4;
+            playerHeight = viewHeight * 30.0/100.0;
 
         } else {
             playerHeight = self.view.frame.size.width/4;
@@ -1010,9 +1181,12 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 -(void)pressedClose:(UIButton *)button{
     [playerView clean];
     playerView = nil;
-    [self dismissViewControllerAnimated:YES completion:nil];
-
+    ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+    [((AppDelegate *)[[UIApplication sharedApplication] delegate]) closePlayer];
+//    [self dismissViewControllerAnimated:YES completion:nil];
+//    [self.view removeFromSuperview];
 }
+
 #pragma mark - call php api
 -(void)callWebService{
     NSLog(@"call API");
@@ -1067,6 +1241,12 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 }
 -(void)pareJsonToData{
     NSLog(@"pareDAta");
+    if(_serverA){
+        _serverA = nil;
+    }
+    if (_serverB) {
+        _serverB = nil;
+    }
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         // Background work
         NSString *receivedDataString = [[NSString alloc] initWithData:receivedData encoding:NSUTF8StringEncoding];
@@ -1083,21 +1263,75 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
             if(json){
 //                [searchResults removeAllObjects];
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                    NSArray *listLink= [json objectForKey:@"movie_links"];
-                    NSLog(@"LinkfilmARR %@ %d",listLink,listLink.count);
-                    if([listLink count]>0){
-                        
-                        movieURL =[NSURL URLWithString:[listLink objectAtIndex:0 ]];
-                        NSLog(@"Linkfilm %@",movieURL);
-//                        [_moviePlayerViewController.moviePlayer setContentURL:movieURL];
-//                        [_moviePlayerViewController.moviePlayer prepareToPlay];
+                    NSDictionary *listServer= [json objectForKey:@"movie_links_server"];
+//                    movie_links
+                    _serverA = [listServer objectForKey:@"server_1"];
+                    _serverB = [listServer objectForKey:@"server_2"];
+//
+//                    NSLog(@"LinkfilmARR %@ %d",listLink,listLink.count);
+                    int total = 0;
+                    int current = 0;
+                    int server = 0;
+                    int section = 0;
+                    if([_serverA isKindOfClass:[NSArray class]] &&  [_serverA count]>0){
+                        int curEpsider = 0;
+                        if (self.previousEpsider && self.previousEpsider.userdataID > 0) {
+                            NSArray  *sv = [self.previousEpsider.currentEpsider componentsSeparatedByString:@"-"];
+                            if ([sv[0] intValue] == 0) {
+                                server = 0;
+                                if (sv.count > 1) {
+                                    current = [sv[1] intValue];
+                                    
+                                }
+                                total = (int)_serverA.count;
+                                curIndexPath = [NSIndexPath indexPathForRow:current inSection:section];
+                                movieURL =[NSURL URLWithString:[_serverA objectAtIndex:current ]];
+
+                            }else{
+                                total = (int)_serverA.count;
+                                curIndexPath = [NSIndexPath indexPathForRow:0 inSection:section];
+                                movieURL =[NSURL URLWithString:[_serverA objectAtIndex:current ]];
+
+                            }
+                        }else{
+                            total = (int)_serverA.count;
+                            curIndexPath = [NSIndexPath indexPathForRow:0 inSection:section];
+                            movieURL =[NSURL URLWithString:[_serverA objectAtIndex:0 ]];
+   
+                        }
+                        section++;
+                    }else if([_serverB isKindOfClass:[NSArray class]] &&_serverB .count > 0){
+                        if (self.previousEpsider && self.previousEpsider.userdataID > 0) {
+                            NSArray  *sv = [self.previousEpsider.currentEpsider componentsSeparatedByString:@"-"];
+                            if ([sv[0] intValue] == 1) {
+                                server = 1;
+                                if (sv.count > 1) {
+                                    current = [sv[1] intValue];
+
+                                }
+                                
+                                total = (int)_serverB.count;
+                                curIndexPath = [NSIndexPath indexPathForRow:current inSection:section];
+                                movieURL =[NSURL URLWithString:[_serverB objectAtIndex:current ]];
+                            }else{
+                                total = (int)_serverB.count;
+                                curIndexPath = [NSIndexPath indexPathForRow:0 inSection:section];
+                                movieURL =[NSURL URLWithString:[_serverB objectAtIndex:current ]];
+
+                            }
+                        }else{
+                            total = (int)_serverB.count;
+                            curIndexPath = [NSIndexPath indexPathForRow:0 inSection:section];
+                            movieURL =[NSURL URLWithString:[_serverB objectAtIndex:0 ]];
+
+                        }
                     }
                     
                    // NSDictionary *serverlist = [json objectForKey:@"movie_links_server"];
                    // NSLog(@"serverlist %@",[serverlist objectForKey:@"server_2"]);
                     dispatch_async(dispatch_get_main_queue(), ^{
 //                        [_tbSearch reloadData];
-                        [_relateView setDataArrayEpsolider2:listLink];
+                        [_relateView setDataArrayEpsolider2:_serverA server2:_serverB currentIndexPath:curIndexPath];
                         _infoDetail = [[FilmInfoDetails alloc] initWithData:json];
                         [_infoView bindDataToView:_infoDetail];
                         [_overviewView bindDataToView:_infoDetail.name desc:_infoDetail.desc];
@@ -1105,11 +1339,11 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 //                        [self.moviePlayerViewController.moviePlayer prepareToPlay];
 //                        [self.moviePlayerController setContentURL:movieURL];
                         //
-                        [playerView setVideoURL:movieURL];
-                        [playerView prepareAndPlayAutomatically:YES];
-//                        [self.moviePlayerController prepareToPlay];
-                        [_btnPlay setUserInteractionEnabled:YES];
-                        [self saveFilmHistory];
+//                        [playerView setVideoURL:movieURL];
+                        playerView.total = total;
+                        playerView.current = current;
+                        [self playVideoWithUrl:movieURL atEpside:curIndexPath.row];
+//                        [self saveFilmHistory];
                         //                        EmployeeDbUtil get
                         //[self pressPlay:nil];
 //                        [self updateRightMenuData : listLink];
@@ -1133,15 +1367,248 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     [self btnMovePanelLeft:nil];
     [self prepareFilmData:item];
 }
--(void)playMovieAtIndex:(NSString *)url{
+-(void)playMovieAtIndex:(NSString *)url epside:(NSIndexPath *)indexPath{
     movieURL = [NSURL URLWithString:url];
-    [playerView setVideoURL:movieURL];
+    curIndexPath = indexPath;
+    playerView.current = (int)indexPath.item;
+    [self playVideoWithUrl:movieURL atEpside:indexPath.row];
+
+}
+#pragma mark - PlayerDelegate
+-(void)playerDidLeaveFullscreen{
+    [playerView updatePlayerLayer];
+    movieIndicator.transform = CGAffineTransformMakeRotation(0);
+    self.bannerView.hidden = NO;
+
+}
+-(void)playerWillEnterFullscreen{
+//    self.btnClose.hidden = YES;
+    self.bannerView.hidden = YES;
+    float degrees = 90; //the value in degrees
+    movieIndicator.transform = CGAffineTransformMakeRotation(degrees * M_PI/180);
+}
+-(void)playerStalled{
+//    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Movies Error" message:@"Server is overload now, please try again later!" preferredStyle:UIAlertControllerStyleAlert];
+//    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+//        [alert dismissViewControllerAnimated:YES completion:nil];
+//    }];
+//    [alert addAction:okAction];
+//    [self presentViewController:alert animated:YES completion:nil];
+}
+
+-(void)playerDidNext{
+    if (curIndexPath) {
+
+        NSInteger section = curIndexPath.section;
+        int count = 0;
+        if ( [_serverA isKindOfClass:[NSArray class]]) {
+            count++;
+        }
+        if([_serverB isKindOfClass:[NSArray class]]){
+            count++;
+            
+            
+        }
+        if (count == 2) {
+            if (section == 0 && [_serverA isKindOfClass:[NSArray class]]) {
+                if (curIndexPath.row + 1 < _serverA.count) {
+                    [self playNextvideo:_serverA];
+                    
+                }
+            }else if(section == 1 && [_serverB isKindOfClass:[NSArray class]]){
+                if (curIndexPath.row + 1 < _serverB.count) {
+                    
+                    [self playNextvideo:_serverB];
+                }
+            }
+        }else if(count == 1){
+            if ([_serverA isKindOfClass:[NSArray class]]) {
+                if (curIndexPath.row + 1 < _serverA.count) {
+                    [self playNextvideo:_serverA];
+                    
+                }
+            }else if([_serverB isKindOfClass:[NSArray class]]){
+                if (curIndexPath.row + 1 < _serverB.count) {
+                    
+                    [self playNextvideo:_serverB];
+                }
+            }
+        }
+       
+    }
+}
+-(void)playerDidPrevious{
+    if (curIndexPath) {
+        
+        NSInteger section = curIndexPath.section;
+        int count = 0;
+        if ( [_serverA isKindOfClass:[NSArray class]]) {
+            count++;
+        }
+        if([_serverB isKindOfClass:[NSArray class]]){
+            count++;
+
+        
+        }
+        if (count == 2) {
+            if (section == 0 && [_serverA isKindOfClass:[NSArray class]]) {
+                count++;
+                if (curIndexPath.row > 0) {
+                    [self playPrevVideo:_serverA];
+                    
+                }
+            }else if(section == 1 && [_serverB isKindOfClass:[NSArray class]]){
+                count++;
+                
+                if (curIndexPath.row >0) {
+                    
+                    [self playPrevVideo:_serverB];
+                }
+            }
+        }else if(count == 1){
+            if ([_serverA isKindOfClass:[NSArray class]]) {
+                count++;
+                if (curIndexPath.row > 0) {
+                    [self playPrevVideo:_serverA];
+                    
+                }
+            }else if([_serverB isKindOfClass:[NSArray class]]){
+                count++;
+                
+                if (curIndexPath.row >0) {
+                    
+                    [self playPrevVideo:_serverB];
+                }
+            }
+        }
+       
+    }
+
+}
+-(void)playerDidExpandLess{
+    [self scaleViewToMinimumSize];
+}
+
+-(void)playNextvideo:(NSArray *)server{
+    curIndexPath = [NSIndexPath indexPathForItem:curIndexPath.row + 1 inSection:curIndexPath.section];
+    movieURL = [NSURL URLWithString:[server objectAtIndex:curIndexPath.row]];
+    //            curIndexPath = indexPath;
+//    [playerView clean];
+    [self playVideoWithUrl:movieURL atEpside:curIndexPath.row];
+
+}
+-(void)playPrevVideo:(NSArray *)server{
+    curIndexPath = [NSIndexPath indexPathForItem:curIndexPath.row - 1 inSection:curIndexPath.section];
+    movieURL = [NSURL URLWithString:[server objectAtIndex:curIndexPath.row]];
+    //            curIndexPath = indexPath;
+//    [playerView clean];
+    [self playVideoWithUrl:movieURL atEpside:curIndexPath.row];
+}
+
+-(void)playVideoWithUrl:(NSURL *)url atEpside:(NSInteger)eps{
+    movieIndicator.hidden = NO;
+    playerView.current = (int)eps;
+    [playerView setVideoURL:url];
+    [playerView setFilmname:[NSString stringWithFormat:@"%@ Tập %ld",_infoDetail.name,eps + 1]];
     [playerView prepareAndPlayAutomatically:YES];
-//    [self.moviePlayerController setContentURL:movieURL];
-//    [self.moviePlayerController prepareToPlay];
+    [self.view bringSubviewToFront:movieIndicator];
+    movieIndicator.hidden = NO;
+    [movieIndicator startAnimating];
+    //    [self.moviePlayerController setContentURL:movieURL];
+    //    [self.moviePlayerController prepareToPlay];
+    [self saveFilmHistory];
+    [self addIndicator];
     [self pressPlay:nil];
+}
+-(void)playerDidPlaying{
+    [movieIndicator removeFromSuperview];
+}
+-(void)addIndicator{
+    movieIndicator= [[MONActivityIndicatorView alloc] init];
+    [movieIndicator setTranslatesAutoresizingMaskIntoConstraints:NO];
+    
+    movieIndicator.delegate = self;
+    movieIndicator.numberOfCircles = 3;
+    movieIndicator.radius = 10;
+    movieIndicator.internalSpacing = 3;
+    [self.playerView addSubview:movieIndicator];
+    if (self.playerView) {
+        NSLayoutConstraint *c;
+        c = [NSLayoutConstraint constraintWithItem:movieIndicator
+                                         attribute:NSLayoutAttributeCenterX
+                                         relatedBy:NSLayoutRelationEqual
+                                            toItem:playerView
+                                         attribute:NSLayoutAttributeCenterX
+                                        multiplier:1
+                                          constant:0];
+        [self.view addConstraint:c];
+        c = [NSLayoutConstraint constraintWithItem:movieIndicator
+                                         attribute:NSLayoutAttributeCenterY
+                                         relatedBy:NSLayoutRelationEqual
+                                            toItem:playerView
+                                         attribute:NSLayoutAttributeCenterY
+                                        multiplier:1
+                                          constant:0];
+        [self.view addConstraint:c];
+        [movieIndicator startAnimating];
+    }
 
 }
 
+- (void) didRotate:(NSNotification *)notification {
+    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    if (_timer) {
+        [_timer invalidate];
+        _timer = nil;
+       
+    }
+    NSNumber *number = [NSNumber numberWithInteger:orientation];
+    _timer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(waitingForRatation:) userInfo:number repeats:NO];
+}
+-(void)waitingForRatation:(NSTimer *)timer{
+    NSNumber *number = [timer userInfo];
+    if (number) {
+        UIDeviceOrientation orientation = [number integerValue];
+        [self doRotate:orientation];
+
+    }
+}
+-(void)doRotate:(UIDeviceOrientation )orientation{
+    switch (orientation) {
+        case UIDeviceOrientationPortrait:
+            // do something for portrait orientation
+            if (playerView.rotating == NO) {
+                [playerView changeViewtoPortrait];
+            }else{
+                playerView.queueRotate = orientation;
+            }
+            break;
+        case UIDeviceOrientationPortraitUpsideDown:
+            break;
+        case UIDeviceOrientationLandscapeLeft:
+            if (playerView.rotating == NO) {
+                
+                [playerView changeViewToLandcape];
+            }else{
+                playerView.queueRotate = orientation;
+            }
+            break;
+            
+        case UIDeviceOrientationLandscapeRight:
+            // do something for landscape orientation
+            if (playerView.rotating == NO) {
+                
+                [playerView changeViewToLandcapeLeft];
+            }
+            else{
+                playerView.queueRotate = orientation;
+            }
+            break;
+            
+        default:
+            break;
+    }
+
+}
 
 @end

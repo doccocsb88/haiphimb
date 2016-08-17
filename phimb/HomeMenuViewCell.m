@@ -42,6 +42,8 @@
     lbText = [[UILabel alloc] initWithFrame:CGRectMake(20 + viewHeight, 0, viewWidth - viewHeight-20, viewHeight)];
     lbText.font = font;
     lbText.textColor = [UIColor blackColor];
+    
+    //
     separate = [[UIView alloc] initWithFrame:CGRectMake(10, viewHeight-1, viewWidth,0.5f)];
     separate.backgroundColor = [UIColor grayColor];
     [separate setHidden:YES];

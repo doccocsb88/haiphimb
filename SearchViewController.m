@@ -10,6 +10,7 @@
 #import "SearchResultItem.h"
 #import "PlayVideoViewController.h"
 #import "ColorSchemeHelper.h"
+#import "AppDelegate.h"
 @interface SearchViewController ()
 {
     NSString *searhKey;
@@ -19,6 +20,7 @@
     NSMutableData *receivedData;
     NSInteger paramPage;
 }
+
 @end
 
 @implementation SearchViewController
@@ -26,6 +28,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self setNeedsStatusBarAppearanceUpdate];
     paramPage =1;
     viewSize = self.view.frame.size;
     
@@ -35,7 +38,9 @@
     [self initSearchResultTable];
     // Do any additional setup after loading the view.
 }
-
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
@@ -52,6 +57,7 @@
     _search.barTintColor = [UIColor clearColor];
     _search.layer.borderWidth = 0;
     _search.layer.borderColor = [UIColor clearColor].CGColor;
+    _search.placeholder = @"Search : title, actor, director ...";
     [self.view addSubview:_search];
 //    UITextField *searchField = [_search valueForKey:@"searchField"];
 //    
@@ -70,7 +76,8 @@
     _tbSearch = [[UITableView alloc] initWithFrame:CGRectMake(0, 64, viewSize.width , viewSize.height-100)];
     _tbSearch.dataSource = self;
     _tbSearch.delegate = self;
-    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapOnTableView:)];
+    [_tbSearch addGestureRecognizer:tap];
     [self.view addSubview:_tbSearch];
 }
 /*
@@ -133,20 +140,20 @@
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
 //    playvid
     //
+    if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
 
     SearchResultItem *item =[searchResults objectAtIndex:indexPath.row];
 
-    PlayVideoViewController *vc = [[PlayVideoViewController alloc] initWithInfo:item];
-    [vc prepareFilmData:item];
-    vc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    vc.view.backgroundColor = [UIColor clearColor];
-    [self presentViewController:vc animated:YES completion:nil];
-
+       [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
+    }
 }
 -(void)setImageAtIndex:(NSInteger)index image:(UIImage *)img{
-    SearchResultItem *item = [searchResults objectAtIndex:index];
-    item.thumbnail = img;
-    [searchResults replaceObjectAtIndex:index withObject:item];
+    if (searchResults && searchResults.count > index) {
+        SearchResultItem *item = [searchResults objectAtIndex:index];
+        item.thumbnail = img;
+        [searchResults replaceObjectAtIndex:index withObject:item];
+    }
+ 
 }
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.identifier isEqualToString:@"showRecipeDetail"]) {
@@ -195,7 +202,7 @@
 -(void)request:(NSString *)myString
 {
 //    NSLog(@"%@",myString);
-    searhKey = [self removeAccent:myString];
+    searhKey = [[self removeAccent:myString] lowercaseString];
     paramPage = 1;
     [searchResults removeAllObjects];
     [_tbSearch reloadData];
@@ -203,6 +210,8 @@
 
     
 }
+
+
 -(void)readDataFromServer{
     NSLog(@"readingData from server");
 
@@ -213,8 +222,9 @@
 //    NSData *myRequestData = [NSData dataWithBytes: [myRequestString UTF8String] length: [myRequestString length]];
 //    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL: [NSURL URLWithString: @"http://www.phimb.net/json-api/movies.php"]];
     NSString *urlCuoc = [NSString stringWithFormat:@"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/search/%@/%ld",searhKey,paramPage];
-
-    NSURLRequest *theRequest=[NSURLRequest requestWithURL:[NSURL URLWithString:urlCuoc]
+    NSString* encodedUrl = [urlCuoc stringByAddingPercentEscapesUsingEncoding:
+                            NSUTF8StringEncoding];
+    NSURLRequest *theRequest=[NSURLRequest requestWithURL:[NSURL URLWithString:encodedUrl]
                                               cachePolicy:NSURLRequestUseProtocolCachePolicy
                                           timeoutInterval:60.0];
     NSURLConnection *theConnection=[[NSURLConnection alloc] initWithRequest:theRequest delegate:self];
@@ -275,7 +285,7 @@
                         NSLog(@"xxx : %@",avatars);
                         SearchResultItem *item= [[SearchResultItem alloc] initWithData:avatars];
 //                        [searchResults addObject:item ];
-                        NSString *title = [self removeAccent:item.name];
+                        NSString *title = [[self removeAccent:item.name] lowercaseString];
                         if ([title containsString:searhKey]) {
                             [arrs addObject:item];
 
@@ -302,8 +312,22 @@
 
 
 -(NSString *)removeAccent:(NSString *)str{
+    str = [str lowercaseString];
+    str = [str stringByReplacingOccurrencesOfString:@"đ" withString:@"d"];
+    
     NSData *data = [str dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
     NSString *newStr = [[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
     return newStr;
+}
+-(void) didTapOnTableView:(UIGestureRecognizer*) recognizer {
+    CGPoint tapLocation = [recognizer locationInView:_tbSearch];
+    NSIndexPath *indexPath = [_tbSearch indexPathForRowAtPoint:tapLocation];
+    
+//    if (indexPath) { //we are in a tableview cell, let the gesture be handled by the view
+        recognizer.cancelsTouchesInView = NO;
+        if (recognizer.state == UIGestureRecognizerStateEnded) {
+            [self.search resignFirstResponder];
+        }
+//    }
 }
 @end

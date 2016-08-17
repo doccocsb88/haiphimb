@@ -31,6 +31,6 @@
 
 -(id)initWidthData : (FilmInfoDetails *)data frame:(CGRect)frame;
 -(void)bindDataToView: (FilmInfoDetails *)data;
--(void)setInfoThumbnail:(UIImage *)thumbnail;
+-(void)setInfoThumbnail:(UIImage *)thumbnail andUrl:(NSString *)imageURL;
 
 @end

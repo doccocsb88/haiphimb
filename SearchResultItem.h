@@ -14,6 +14,8 @@
 @property (strong, nonatomic) NSString *subname;
 @property (strong,nonatomic) NSString *img;
 @property (strong,nonatomic) NSString *imglanscape;
+@property (strong,nonatomic) NSString *total;
+
 @property (strong, nonatomic) UIImage *thumbnail;
 @property (nonatomic,assign) BOOL hasData;
 -(id)initWithData: (NSDictionary *)data;

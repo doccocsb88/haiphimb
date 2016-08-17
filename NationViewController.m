@@ -44,6 +44,7 @@
 @synthesize panelWidth;
 -(void)viewDidLoad {
     [super viewDidLoad];
+    [self setNeedsStatusBarAppearanceUpdate];
     indexTab = self.view.tag;
     NSString *deviceString =[[UIDevice currentDevice] platformString];
     if ([deviceString containsString:@"iPad"]) {
@@ -63,18 +64,21 @@
 {
     [super viewDidUnload];
 }
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
 -(void)viewWillLayoutSubviews{
     [super viewWillLayoutSubviews];
-    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
-        // portrait
-        panelWidth = PANEL_WIDTH;
-        
-    } else {
-        // landscape
-        panelWidth = self.view.frame.size.width - (self.view.frame.size.height - 60);
-        
-    }
+//    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+//    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+//        // portrait
+//        panelWidth = PANEL_WIDTH;
+//        
+//    } else {
+//        // landscape
+//        panelWidth = self.view.frame.size.width - (self.view.frame.size.height - 60);
+//        
+//    }
 }
 #pragma mark -
 #pragma mark View Will/Did Appear
@@ -148,6 +152,7 @@
     self.CenterXViewController = [storyboard instantiateViewControllerWithIdentifier:@"nationfilmvc"];
     //    self.CenterXViewController.indexTagView = indexTab;
     self.CenterXViewController.view.tag = CENTER_TAG;
+
     self.CenterXViewController.delegate = self;
     [self.view addSubview:self.CenterXViewController.view];
     [self addChildViewController:_CenterXViewController];
@@ -208,7 +213,7 @@
         _leftPanelViewController.view.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
     }
     
-//    self.showingLeftPanel = YES;
+    self.showingLeftPanel = YES;
     
     // setup view shadows
     [self showCenterViewWithShadow:YES withOffset:-2];
@@ -272,7 +277,7 @@
             }
         } else {
             if (!_showingLeftPanel) {
-                childView = [self getRightView];
+//                childView = [self getRightView];
             }
             
         }

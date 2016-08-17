@@ -8,14 +8,15 @@
 
 #import "GUIPlayerView.h"
 #import "GUISlider.h"
-#import <MarqueeLabel.h>
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MediaPlayer.h>
-
+#import "MONActivityIndicatorView.h"
 #import "UIView+UpdateAutoLayoutConstraints.h"
-
-@interface GUIPlayerView () <AVAssetResourceLoaderDelegate, NSURLConnectionDataDelegate>
-
+#import "ColorSchemeHelper.h"
+@interface GUIPlayerView () <AVAssetResourceLoaderDelegate, NSURLConnectionDataDelegate, MONActivityIndicatorViewDelegate>
+{
+    BOOL isInit;
+}
 @property (strong, nonatomic) AVPlayer *player;
 @property (strong, nonatomic) AVPlayerLayer *playerLayer;
 @property (strong, nonatomic) AVPlayerItem *currentItem;
@@ -26,33 +27,37 @@
 @property (strong, nonatomic) UILabel *airPlayLabel;
 
 @property (strong, nonatomic) UIButton *playButton;
-@property (strong, nonatomic) UIButton *fullscreenButton;
-@property (strong, nonatomic) UIButton *fullscreenButtonz;
+@property (strong, nonatomic) UIButton *fplayButton;
+
 //
 
 @property (strong, nonatomic) UIButton *nextButton;
 @property (strong, nonatomic) UIButton *prevButton;
+@property (strong, nonatomic) UIButton *btnExpand;
 //
 @property (strong, nonatomic) MPVolumeView *volumeView;
-@property (strong, nonatomic) GUISlider *progressIndicator;
-@property (strong, nonatomic) GUISlider *volume;
-@property (strong, nonatomic) GUISlider *fullScreenProgressIndicator;
-@property (strong, nonatomic) MarqueeLabel *lbTitle;
+@property (strong, nonatomic) UISlider *volume;
+@property (strong, nonatomic) GUISlider *normalSlider;
+@property (strong, nonatomic) GUISlider *fullScreenSlider;
 @property (strong, nonatomic) UILabel *currentTimeLabel;
 @property (strong, nonatomic) UILabel *remainingTimeLabel;
-@property (strong, nonatomic) UILabel *liveLabel;
-
+//@property (strong, nonatomic) UILabel *liveLabel;
+@property (strong, nonatomic) UIImageView *imvVolume;
 @property (strong, nonatomic) UILabel *fullScreenCurrentTimeLabel;
 @property (strong, nonatomic) UILabel *fullScreenRemainingTimeLabel;
 
 @property (strong, nonatomic) UIView *spacerView;
 
-@property (strong, nonatomic) UIActivityIndicatorView *activityIndicator;
+//@property (strong, nonatomic) UIActivityIndicatorView *activityIndicator;
+//@property (strong, nonatomic) MONActivityIndicatorView *movieIndicator;
+
 @property (strong, nonatomic) NSTimer *progressTimer;
+@property (strong, nonatomic) NSTimer *fullScreenProgressTimer;
+
 @property (strong, nonatomic) NSTimer *controllersTimer;
-@property (assign, nonatomic) BOOL seeking;
-@property (assign, nonatomic) BOOL fullscreen;
+
 @property (assign, nonatomic) CGRect defaultFrame;
+@property (assign, nonatomic) CGFloat angle;
 
 @end
 
@@ -60,10 +65,10 @@
 
 @synthesize player, playerLayer, currentItem;
 @synthesize controllersView, controllersFullScreenView, airPlayLabel;
-@synthesize playButton, fullscreenButton, volumeView, progressIndicator, currentTimeLabel, remainingTimeLabel, liveLabel, spacerView;
-@synthesize activityIndicator, progressTimer, controllersTimer, seeking, fullscreen, defaultFrame;
-@synthesize fullScreenProgressIndicator, fullScreenCurrentTimeLabel, fullScreenRemainingTimeLabel, fullscreenButtonz, nextButton, prevButton, volume, lbTitle;
-@synthesize videoURL, controllersTimeoutPeriod, delegate;
+@synthesize playButton, fplayButton, fullscreenButton, volumeView, normalSlider, currentTimeLabel, remainingTimeLabel, /*liveLabel,*/ spacerView, btnExpand;
+@synthesize  progressTimer,fullScreenProgressTimer, controllersTimer, seeking, fseeking, fullscreen, defaultFrame;
+@synthesize fullScreenSlider, fullScreenCurrentTimeLabel, fullScreenRemainingTimeLabel, fullscreenButtonz, nextButton, prevButton, volume, lbTitle, imvVolume;
+@synthesize videoURL, filmname, controllersTimeoutPeriod, delegate;
 
 #pragma mark - View Life Cycle
 
@@ -84,6 +89,7 @@
 }
 
 - (void)setup {
+    isInit = NO;
     // Set up notification observers
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerDidFinishPlaying:)
                                                  name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
@@ -109,8 +115,10 @@
     /** Container View **************************************************************************************************/
     controllersView = [UIView new];
     [controllersView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [controllersView setBackgroundColor:[UIColor colorWithWhite:0.0f alpha:0.45f]];
-    
+    CAGradientLayer *gradient = [CAGradientLayer layer];
+    gradient.frame = controllersView.bounds;
+    gradient.colors = [NSArray arrayWithObjects:(id)[[UIColor whiteColor] CGColor], (id)[[UIColor blackColor] CGColor], nil];
+    [controllersView.layer insertSublayer:gradient atIndex:0];
     [self addSubview:controllersView];
     //
     horizontalConstraints = [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[CV]|"
@@ -197,17 +205,37 @@
     [remainingTimeLabel setTextAlignment:NSTextAlignmentCenter];
     [remainingTimeLabel setTextColor:[UIColor whiteColor]];
     
-    progressIndicator = [GUISlider new];
-    [progressIndicator setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [progressIndicator setContinuous:YES];
+    normalSlider = [GUISlider new];
+    [normalSlider setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [normalSlider setContinuous:YES];
     
-    liveLabel = [UILabel new];
-    [liveLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [liveLabel setFont:[UIFont fontWithName:@"HelveticaNeue-Light" size:13.0f]];
-    [liveLabel setTextAlignment:NSTextAlignmentCenter];
-    [liveLabel setTextColor:[UIColor whiteColor]];
-    [liveLabel setText:@"Live"];
-    [liveLabel setHidden:YES];
+    btnExpand = [UIButton new];
+    [btnExpand setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [btnExpand setImage:[UIImage imageNamed:@"ic_expand_more_white"] forState:UIControlStateNormal];
+    btnExpand.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    btnExpand.imageEdgeInsets = UIEdgeInsetsMake(0, 5, 5, 5);
+    [btnExpand addTarget:self action:@selector(pressedExpand:) forControlEvents:UIControlEventTouchUpInside];
+    [self addSubview:btnExpand];
+    horizontalConstraints = [NSLayoutConstraint
+                             constraintsWithVisualFormat:@"H:|[EP(40)]"
+                             options:0
+                             metrics:nil
+                             views:@{@"EP" : btnExpand}];
+    
+    [self addConstraints:horizontalConstraints];
+    verticalConstraints = [NSLayoutConstraint
+                           constraintsWithVisualFormat:@"V:|-0-[EP(40)]"
+                           options:NSLayoutFormatAlignAllCenterY
+                           metrics:nil
+                           views:@{@"EP" : btnExpand}];
+    [self addConstraints:verticalConstraints];
+//    liveLabel = [UILabel new];
+//    [liveLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
+//    [liveLabel setFont:[UIFont fontWithName:@"HelveticaNeue-Light" size:13.0f]];
+//    [liveLabel setTextAlignment:NSTextAlignmentCenter];
+//    [liveLabel setTextColor:[UIColor whiteColor]];
+//    [liveLabel setText:@"Live"];
+//    [liveLabel setHidden:YES];
     
     spacerView = [UIView new];
     [spacerView setTranslatesAutoresizingMaskIntoConstraints:NO];
@@ -216,9 +244,9 @@
     [controllersView addSubview:fullscreenButton];
     [controllersView addSubview:volumeView];
     [controllersView addSubview:currentTimeLabel];
-    [controllersView addSubview:progressIndicator];
+    [controllersView addSubview:normalSlider];
     [controllersView addSubview:remainingTimeLabel];
-    [controllersView addSubview:liveLabel];
+//    [controllersView addSubview:liveLabel];
     [controllersView addSubview:spacerView];
     
     horizontalConstraints = [NSLayoutConstraint
@@ -228,7 +256,7 @@
                              views:@{@"P" : playButton,
                                      @"S" : spacerView,
                                      @"C" : currentTimeLabel,
-                                     @"I" : progressIndicator,
+                                     @"I" : normalSlider,
                                      @"R" : remainingTimeLabel,
                                      @"V" : volumeView,
                                      @"F" : fullscreenButton}];
@@ -238,13 +266,13 @@
     [volumeView hideByWidth:YES];
     [spacerView hideByWidth:YES];
     
-    horizontalConstraints = [NSLayoutConstraint
-                             constraintsWithVisualFormat:@"H:|-5-[L]-5-|"
-                             options:0
-                             metrics:nil
-                             views:@{@"L" : liveLabel}];
-    
-    [controllersView addConstraints:horizontalConstraints];
+//    horizontalConstraints = [NSLayoutConstraint
+//                             constraintsWithVisualFormat:@"H:|-5-[L]-5-|"
+//                             options:0
+//                             metrics:nil
+//                             views:@{@"L" : liveLabel}];
+//    
+//    [controllersView addConstraints:horizontalConstraints];
     
     for (UIView *view in [controllersView subviews]) {
         verticalConstraints = [NSLayoutConstraint
@@ -257,30 +285,37 @@
     
     
     /** Loading Indicator ***********************************************************************************************/
-    activityIndicator = [UIActivityIndicatorView new];
-    [activityIndicator stopAnimating];
-    
+//    movieIndicator = [UIActivityIndicatorView new];
+//    [activityIndicator stopAnimating];
+//    [self addIndicator];
     CGRect frame = self.frame;
     frame.origin = CGPointZero;
-    [activityIndicator setFrame:frame];
+//    [activityIndicator setFrame:frame];
+//    
+//    [self addSubview:activityIndicator];
+
     
-    [self addSubview:activityIndicator];
+    //    [self placeAtTheCenterWithView:_movieIndicator];
     
+    //    [NSTimer scheduledTimerWithTimeInterval:7 target:indicatorView selector:@selector(stopAnimating) userInfo:nil repeats:NO];
+//    [NSTimer scheduledTimerWithTimeInterval:9 target:movieIndicator selector:@selector(startAnimating) userInfo:nil repeats:NO];
     
     /** Actions Setup ***************************************************************************************************/
-    
+//    play
     [playButton addTarget:self action:@selector(togglePlay:) forControlEvents:UIControlEventTouchUpInside];
     [fullscreenButton addTarget:self action:@selector(toggleFullscreen:) forControlEvents:UIControlEventTouchUpInside];
     
-    [progressIndicator addTarget:self action:@selector(seek:) forControlEvents:UIControlEventValueChanged];
-    [progressIndicator addTarget:self action:@selector(pauseRefreshing) forControlEvents:UIControlEventTouchDown];
-    [progressIndicator addTarget:self action:@selector(resumeRefreshing) forControlEvents:UIControlEventTouchUpInside|
+    [normalSlider addTarget:self action:@selector(seek:) forControlEvents:UIControlEventValueChanged];
+    [normalSlider addTarget:self action:@selector(pauseRefreshing) forControlEvents:UIControlEventTouchDown];
+    [normalSlider addTarget:self action:@selector(resumeRefreshing) forControlEvents:UIControlEventTouchUpInside|
      UIControlEventTouchUpOutside];
     
     [self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(showControllers)]];
     [self showControllers];
     
     controllersTimeoutPeriod = 3;
+   
+    
 }
 -(void)setupFullScreenController{
     NSArray *verticalConstraints;
@@ -288,7 +323,12 @@
     //
     UIView *header = [UIView new];
     [header setTranslatesAutoresizingMaskIntoConstraints:NO];
-    header.backgroundColor = [UIColor yellowColor];
+//    header.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.3];
+    CAGradientLayer *gradient = [CAGradientLayer layer];
+    gradient.frame = header.bounds;
+    gradient.colors = [NSArray arrayWithObjects:(id)[[UIColor blackColor] CGColor], (id)[[UIColor whiteColor] CGColor], nil];
+    [header.layer insertSublayer:gradient atIndex:0];
+
     [controllersFullScreenView addSubview:header];
     horizontalConstraints = [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[HD]|"
                                                                     options:0
@@ -304,7 +344,11 @@
     //
     UIView *footer = [UIView new];
     [footer setTranslatesAutoresizingMaskIntoConstraints:NO];
-    footer.backgroundColor = [UIColor redColor];
+//    footer.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.3];
+//    CAGradientLayer *gradient = [CAGradientLayer layer];
+    gradient.frame = footer.bounds;
+    gradient.colors = [NSArray arrayWithObjects:(id)[[UIColor whiteColor] CGColor], (id)[[UIColor blackColor] CGColor], nil];
+    [footer.layer insertSublayer:gradient atIndex:0];
     [controllersFullScreenView addSubview:footer];
 
    
@@ -320,7 +364,7 @@
     [controllersFullScreenView addConstraints:verticalConstraints];
     [controllersFullScreenView addConstraints:horizontalConstraints];
     //
-   UIButton *fplayButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    fplayButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [fplayButton setTranslatesAutoresizingMaskIntoConstraints:NO];
     [fplayButton setImage:[UIImage imageNamed:@"gui_play"] forState:UIControlStateNormal];
     [fplayButton setImage:[UIImage imageNamed:@"gui_pause"] forState:UIControlStateSelected];
@@ -330,19 +374,32 @@
     [nextButton setTranslatesAutoresizingMaskIntoConstraints:NO];
     [nextButton setImage:[UIImage imageNamed:@"ic_next"] forState:UIControlStateNormal];
     [nextButton setImage:[UIImage imageNamed:@"ic_next"] forState:UIControlStateSelected];
+    [nextButton addTarget:self action:@selector(pressedNext:) forControlEvents:UIControlEventTouchUpInside];
+    
     prevButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [prevButton setTranslatesAutoresizingMaskIntoConstraints:NO];
     [prevButton setImage:[UIImage imageNamed:@"ic_previous"] forState:UIControlStateNormal];
     [prevButton setImage:[UIImage imageNamed:@"ic_previous"] forState:UIControlStateSelected];
+    [prevButton addTarget:self action:@selector(pressedPrev:) forControlEvents:UIControlEventTouchUpInside];
     //volume
-    volume = [GUISlider new];
+    volume = [UISlider new];
     [volume setTranslatesAutoresizingMaskIntoConstraints:NO];
     [volume setContinuous:YES];
+    volume.minimumValue = 0.0;
+    volume.maximumValue = 100;
+    [volume setTintColor:[UIColor redColor]];
+    [volume addTarget:self action:@selector(volumeChanged:) forControlEvents:UIControlEventValueChanged];
     [footer addSubview:volume];
-    
+    imvVolume = [UIImageView new];
+    [imvVolume setTranslatesAutoresizingMaskIntoConstraints:NO];
+    imvVolume.image = [UIImage imageNamed:@"ic_volume"];
+    imvVolume.contentMode = UIViewContentModeScaleAspectFit;
+    [footer addSubview:imvVolume];
     lbTitle = [MarqueeLabel new];
     [lbTitle setTranslatesAutoresizingMaskIntoConstraints:NO];
-    lbTitle.text = @"film name";
+    lbTitle.text = filmname;
+    lbTitle.textColor = [UIColor whiteColor];
+    lbTitle.textAlignment = NSTextAlignmentRight;
 //    lbTitle set
     [footer addSubview:lbTitle];
     
@@ -350,10 +407,11 @@
     [footer addSubview:nextButton];
     [footer addSubview:prevButton];
     horizontalConstraints = [NSLayoutConstraint
-                             constraintsWithVisualFormat:@"H:|-[FVL(100)]-(>=50)-[FV(30)]-5-[FP(30)]-5-[FN(30)]-5-[FT]-|"
+                             constraintsWithVisualFormat:@"H:|-[FVL(100)]-[FM(20)]-(>=50)-[FV(30)]-5-[FP(30)]-5-[FN(30)]-10-[FT]-|"
                              options:0
                              metrics:nil
                              views:@{@"FVL":volume,
+                                     @"FM" :imvVolume,
                                      @"FV" : prevButton,
                                      @"FP" : fplayButton,
                                      @"FN" : nextButton,
@@ -387,12 +445,12 @@
     [fullScreenRemainingTimeLabel setTextAlignment:NSTextAlignmentCenter];
     [fullScreenRemainingTimeLabel setTextColor:[UIColor whiteColor]];
     
-    fullScreenProgressIndicator = [GUISlider new];
-    [fullScreenProgressIndicator setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [fullScreenProgressIndicator setContinuous:YES];
+    fullScreenSlider = [GUISlider new];
+    [fullScreenSlider setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [fullScreenSlider setContinuous:YES];
     [header addSubview:fullScreenCurrentTimeLabel];
     [header addSubview:fullScreenRemainingTimeLabel];
-    [header addSubview:fullScreenProgressIndicator];
+    [header addSubview:fullScreenSlider];
     [header addSubview:fullscreenButtonz];
     horizontalConstraints = [NSLayoutConstraint
                              constraintsWithVisualFormat:@"H:|[FC(40)]-5-[FI]-5-[FR(40)][FF(40)]|"
@@ -400,7 +458,7 @@
                              metrics:nil
                              views:@{
                                      @"FC" : fullScreenCurrentTimeLabel,
-                                     @"FI" : fullScreenProgressIndicator,
+                                     @"FI" : fullScreenSlider,
                                      @"FR" : fullScreenRemainingTimeLabel,
                                      @"FF":fullscreenButtonz}];
     
@@ -423,14 +481,16 @@
     }
 
     //
+    [fplayButton addTarget:self action:@selector(togglePlay:) forControlEvents:UIControlEventTouchUpInside];
+
     [fullscreenButtonz addTarget:self action:@selector(toggleFullscreen:) forControlEvents:UIControlEventTouchUpInside];
     
-    [fullScreenProgressIndicator addTarget:self action:@selector(seek:) forControlEvents:UIControlEventValueChanged];
-    [fullScreenProgressIndicator addTarget:self action:@selector(pauseRefreshing) forControlEvents:UIControlEventTouchDown];
-    [fullScreenProgressIndicator addTarget:self action:@selector(resumeRefreshing) forControlEvents:UIControlEventTouchUpInside|
+    [fullScreenSlider addTarget:self action:@selector(fseek:) forControlEvents:UIControlEventValueChanged];
+    [fullScreenSlider addTarget:self action:@selector(fpauseRefreshing) forControlEvents:UIControlEventTouchDown];
+    [fullScreenSlider addTarget:self action:@selector(fresumeRefreshing) forControlEvents:UIControlEventTouchUpInside|
      UIControlEventTouchUpOutside];
     
-
+    controllersFullScreenView.hidden = YES;
     
 }
 #pragma mark - UI Customization
@@ -438,15 +498,17 @@
 - (void)setTintColor:(UIColor *)tintColor {
     [super setTintColor:tintColor];
     
-    [progressIndicator setTintColor:tintColor];
+    [normalSlider setTintColor:tintColor];
+    [fullScreenSlider setTintColor:tintColor];
 }
 
 - (void)setBufferTintColor:(UIColor *)tintColor {
-    [progressIndicator setSecondaryTintColor:tintColor];
+    [normalSlider setSecondaryTintColor:tintColor];
+    [fullScreenSlider setSecondaryTintColor:tintColor];
 }
 
 - (void)setLiveStreamText:(NSString *)text {
-    [liveLabel setText:text];
+//    [liveLabel setText:text];
 }
 
 - (void)setAirPlayText:(NSString *)text {
@@ -477,76 +539,200 @@
 
 - (void)toggleFullscreen:(UIButton *)button {
     if (fullscreen) {
-        if ([delegate respondsToSelector:@selector(playerWillLeaveFullscreen)]) {
-            [delegate playerWillLeaveFullscreen];
-        }
-        
-        [UIView animateWithDuration:0.2f animations:^{
-            [self setTransform:CGAffineTransformMakeRotation(0)];
-            [self setFrame:defaultFrame];
-            
-            CGRect frame = defaultFrame;
-            frame.origin = CGPointZero;
-            [playerLayer setFrame:frame];
-            [activityIndicator setFrame:frame];
-        } completion:^(BOOL finished) {
-            fullscreen = NO;
-            controllersFullScreenView.hidden = YES;
-            controllersView.hidden = NO;
-            if ([delegate respondsToSelector:@selector(playerDidLeaveFullscreen)]) {
-                [delegate playerDidLeaveFullscreen];
-            }
-        }];
+        [self changeViewtoPortrait];
         
         [button setSelected:NO];
     } else {
-        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-        
-        CGFloat width = [[UIScreen mainScreen] bounds].size.width;
-        CGFloat height = [[UIScreen mainScreen] bounds].size.height;
-        CGRect frame;
-        
-        if (UIInterfaceOrientationIsPortrait(orientation)) {
-            CGFloat aux = width;
-            width = height;
-            height = aux;
-            frame = CGRectMake((height - width) / 2, (width - height) / 2, width, height);
-        } else {
-            frame = CGRectMake(0, 0, width, height);
-        }
-        //
-
-        //
-        if ([delegate respondsToSelector:@selector(playerWillEnterFullscreen)]) {
-            [delegate playerWillEnterFullscreen];
-        }
-        
-        [UIView animateWithDuration:0.2f animations:^{
-            [self setFrame:frame];
-            [playerLayer setFrame:CGRectMake(0, 0, width, height)];
-            
-            [activityIndicator setFrame:CGRectMake(0, 0, width, height)];
-            if (UIInterfaceOrientationIsPortrait(orientation)) {
-                [self setTransform:CGAffineTransformMakeRotation(M_PI_2)];
-                [activityIndicator setTransform:CGAffineTransformMakeRotation(M_PI_2)];
-            }
-            
-        } completion:^(BOOL finished) {
-            fullscreen = YES;
-            controllersFullScreenView.hidden = NO;
-            controllersView.hidden = YES;
-            if ([delegate respondsToSelector:@selector(playerDidEnterFullscreen)]) {
-                [delegate playerDidEnterFullscreen];
-            }
-        }];
-        
+        [self changeViewToLandcape];
         [button setSelected:YES];
+
     }
     
     [self showControllers];
 }
+-(void)changeViewtoPortrait{
+    if ([delegate respondsToSelector:@selector(playerWillLeaveFullscreen)]) {
+        [delegate playerWillLeaveFullscreen];
+    }
+    [self updatePlayerLayer];
+    self.angle = 0;
+    self.rotating = YES;
 
+    [UIView animateWithDuration:0.4f animations:^{
+        [self setTransform:CGAffineTransformMakeRotation(0)];
+        
+        [self setFrame:defaultFrame];
+        playerLayer.frame = CGRectMake(0, 0, defaultFrame.size.width, defaultFrame.size.height);
+        
+        //            CGRect frame = defaultFrame;
+        //            frame.origin = CGPointZero;
+        //            [playerLayer setFrame:frame];
+        //            [movieIndicator setFrame:frame];
+        //            movieIndicator.center = self.center;
+    } completion:^(BOOL finished) {
+        fullscreen = NO;
+        controllersFullScreenView.hidden = YES;
+        controllersView.hidden = NO;
+        btnExpand.hidden = NO;
+        self.rotating = NO;
+        [self rotateQueue];
+        if ([delegate respondsToSelector:@selector(playerDidLeaveFullscreen)]) {
+            [delegate playerDidLeaveFullscreen];
+        }
+    }];
+}
+
+-(void)changeViewToLandcape{
+    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+    
+    CGFloat width = [[UIScreen mainScreen] bounds].size.width;
+    CGFloat height = [[UIScreen mainScreen] bounds].size.height;
+    CGRect frame;
+    CGFloat duration = 0.4;
+    if (UIInterfaceOrientationIsPortrait(orientation)) {
+        CGFloat aux = width;
+        width = height;
+        height = aux;
+        frame = CGRectMake((height - width) / 2, (width - height) / 2, width, height);
+    } else {
+        frame = CGRectMake(0, 0, width, height);
+        duration = duration *3;
+    }
+    //
+    
+    //
+    if ([delegate respondsToSelector:@selector(playerWillEnterFullscreen)]) {
+        [delegate playerWillEnterFullscreen];
+    }
+    self.rotating = YES;
+
+    [UIView animateWithDuration:duration animations:^{
+        if (self.angle == 0) {
+            [self setFrame:frame];
+        }
+//        }else if(self.angle == -M_PI_2){
+//            [self setFrame:CGRectMake(0, 0, width, height)];
+//
+//        }
+        [playerLayer setFrame:CGRectMake(0, 0, width, height)];
+        
+        //            [movieIndicator setFrame:CGRectMake(0, 0, width, height)];
+        //            movieIndicator.center = self.center;
+        if (UIInterfaceOrientationIsPortrait(orientation)) {
+            [self setTransform:CGAffineTransformMakeRotation(M_PI_2)];
+            self.angle = M_PI_2;
+            //                [movieIndicator setTransform:CGAffineTransformMakeRotation(M_PI_2)];
+            //            movieIndicator.center = self.center;
+        }
+        
+    } completion:^(BOOL finished) {
+        fullscreen = YES;
+        controllersFullScreenView.hidden = NO;
+        controllersView.hidden = YES;
+        btnExpand.hidden = NO;
+        self.rotating = NO;
+        [self rotateQueue];
+
+        if ([delegate respondsToSelector:@selector(playerDidEnterFullscreen)]) {
+            [delegate playerDidEnterFullscreen];
+        }
+    }];
+    
+}
+-(void)changeViewToLandcapeLeft{
+    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+    
+    CGFloat width = [[UIScreen mainScreen] bounds].size.width;
+    CGFloat height = [[UIScreen mainScreen] bounds].size.height;
+    CGRect frame;
+    CGFloat duration = 0.4;
+    if (UIInterfaceOrientationIsPortrait(orientation)) {
+        CGFloat aux = width;
+        width = height;
+        height = aux;
+        frame = CGRectMake((height - width) / 2, (width - height) / 2, width, height);
+    } else {
+        frame = CGRectMake(0, 0, width, height);
+        duration = duration*3;
+    }
+    //
+    
+    //
+    self.rotating = YES;
+
+    if ([delegate respondsToSelector:@selector(playerWillEnterFullscreen)]) {
+        [delegate playerWillEnterFullscreen];
+    }
+    
+    [UIView animateWithDuration:duration animations:^{
+        if (self.angle == 0) {
+            [self setFrame:frame];
+
+        }
+        [playerLayer setFrame:CGRectMake(0, 0, width, height)];
+        
+        //            [movieIndicator setFrame:CGRectMake(0, 0, width, height)];
+        //            movieIndicator.center = self.center;
+        if (UIInterfaceOrientationIsPortrait(orientation)) {
+            [self setTransform:CGAffineTransformMakeRotation(-M_PI_2)];
+            self.angle =-M_PI_2;
+            //                [movieIndicator setTransform:CGAffineTransformMakeRotation(M_PI_2)];
+            //            movieIndicator.center = self.center;
+        }
+        
+    } completion:^(BOOL finished) {
+        fullscreen = YES;
+        controllersFullScreenView.hidden = NO;
+        controllersView.hidden = YES;
+        btnExpand.hidden = NO;
+        self.rotating = NO;
+        [self rotateQueue];
+        if ([delegate respondsToSelector:@selector(playerDidEnterFullscreen)]) {
+            [delegate playerDidEnterFullscreen];
+        }
+    }];
+    
+
+}
+-(void)rotateQueue{
+    switch (self.queueRotate) {
+        case UIDeviceOrientationPortrait:
+            // do something for portrait orientation
+            if (self.rotating == NO) {
+                [self changeViewtoPortrait];
+            }else{
+//                playerView.queueRotate = orientation;
+            }
+            break;
+        case UIDeviceOrientationPortraitUpsideDown:
+            break;
+        case UIDeviceOrientationLandscapeLeft:
+            if (self.rotating == NO) {
+                
+                [self changeViewToLandcape];
+            }else{
+//                playerView.queueRotate = orientation;
+            }
+            break;
+            
+        case UIDeviceOrientationLandscapeRight:
+            // do something for landscape orientation
+            if (self.rotating == NO) {
+                
+                [self changeViewToLandcapeLeft];
+            }
+            else{
+//                playerView.queueRotate = orientation;
+            }
+            break;
+            
+        default:
+            break;
+    }
+    self.queueRotate = UIDeviceOrientationUnknown;
+}
 - (void)seek:(UISlider *)slider {
+    [self pause];
     int timescale = currentItem.asset.duration.timescale;
     float time = slider.value * (currentItem.asset.duration.value / timescale);
     [player seekToTime:CMTimeMakeWithSeconds(time, timescale)];
@@ -556,12 +742,31 @@
 
 - (void)pauseRefreshing {
     seeking = YES;
+    [self pause];
 }
 
 - (void)resumeRefreshing {
     seeking = NO;
+    [self play];
+}
+- (void)fseek:(UISlider *)slider {
+    [self pause];
+    int timescale = currentItem.asset.duration.timescale;
+    float time = slider.value * (currentItem.asset.duration.value / timescale);
+    [player seekToTime:CMTimeMakeWithSeconds(time, timescale)];
+    
+    [self showControllers];
 }
 
+- (void)fpauseRefreshing {
+    fseeking = YES;
+    [self pause];
+}
+
+- (void)fresumeRefreshing {
+    fseeking = NO;
+    [self play];
+}
 - (NSTimeInterval)availableDuration {
     NSTimeInterval result = 0;
     NSArray *loadedTimeRanges = player.currentItem.loadedTimeRanges;
@@ -575,7 +780,41 @@
     
     return result;
 }
+-(void)refreshFullscreenSlider{
+    CGFloat duration = CMTimeGetSeconds(currentItem.asset.duration);
+    
+    if (duration == 0 || isnan(duration)) {
+        // Video is a live stream
+        [fullScreenCurrentTimeLabel setText:nil];
+        [fullScreenRemainingTimeLabel setText:nil];
+        [fullScreenSlider setHidden:YES];
+        //        [liveLabel setHidden:NO];
+    }
+    
+    else {
+        CGFloat current = fseeking ?
+        fullScreenSlider.value * duration :         // If seeking, reflects the position of the slider
+        CMTimeGetSeconds(player.currentTime); // Otherwise, use the actual video position
+        
+     
+        [fullScreenSlider setValue:(current / duration)];
+        [fullScreenSlider setSecondaryValue:([self availableDuration] / duration)];
+        // Set time labels
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:(duration >= 3600 ? @"hh:mm:ss": @"mm:ss")];
+        
+        NSDate *currentTime = [NSDate dateWithTimeIntervalSince1970:current];
+        NSDate *remainingTime = [NSDate dateWithTimeIntervalSince1970:(duration - current)];
 
+        //fullscreen
+        [fullScreenCurrentTimeLabel setText:[formatter stringFromDate:currentTime]];
+        [fullScreenRemainingTimeLabel setText:[NSString stringWithFormat:@"-%@", [formatter stringFromDate:remainingTime]]];
+        
+        [fullScreenSlider setHidden:NO];
+        //        [liveLabel setHidden:YES];
+    }
+
+}
 - (void)refreshProgressIndicator {
     CGFloat duration = CMTimeGetSeconds(currentItem.asset.duration);
     
@@ -583,18 +822,18 @@
         // Video is a live stream
         [currentTimeLabel setText:nil];
         [remainingTimeLabel setText:nil];
-        [progressIndicator setHidden:YES];
-        [liveLabel setHidden:NO];
+        [normalSlider setHidden:YES];
+//        [liveLabel setHidden:NO];
     }
     
     else {
         CGFloat current = seeking ?
-        progressIndicator.value * duration :         // If seeking, reflects the position of the slider
+        normalSlider.value * duration :         // If seeking, reflects the position of the slider
         CMTimeGetSeconds(player.currentTime); // Otherwise, use the actual video position
         
-        [progressIndicator setValue:(current / duration)];
-        [progressIndicator setSecondaryValue:([self availableDuration] / duration)];
-        
+        [normalSlider setValue:(current / duration)];
+        [normalSlider setSecondaryValue:([self availableDuration] / duration)];
+
         // Set time labels
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         [formatter setDateFormat:(duration >= 3600 ? @"hh:mm:ss": @"mm:ss")];
@@ -604,19 +843,15 @@
         
         [currentTimeLabel setText:[formatter stringFromDate:currentTime]];
         [remainingTimeLabel setText:[NSString stringWithFormat:@"-%@", [formatter stringFromDate:remainingTime]]];
-        
-        [progressIndicator setHidden:NO];
-        //fullscreen
-        [fullScreenCurrentTimeLabel setText:[formatter stringFromDate:currentTime]];
-        [fullScreenRemainingTimeLabel setText:[NSString stringWithFormat:@"-%@", [formatter stringFromDate:remainingTime]]];
-        
-        [fullScreenProgressIndicator setHidden:NO];
-        [liveLabel setHidden:YES];
+        [normalSlider setHidden:NO];
+//        [liveLabel setHidden:YES];
     }
 }
 
 - (void)showControllers {
+    if(_hasController){
     [UIView animateWithDuration:0.2f animations:^{
+        [btnExpand setAlpha:1.0];
         [controllersView setAlpha:1.0f];
         [controllersFullScreenView setAlpha:1.0f];
     } completion:^(BOOL finished) {
@@ -630,10 +865,12 @@
                                                                repeats:NO];
         }
     }];
+    }
 }
 
 - (void)hideControllers {
     [UIView animateWithDuration:0.5f animations:^{
+        [btnExpand setAlpha:0.0];
         [controllersView setAlpha:0.0f];
         [controllersFullScreenView setAlpha:0.0f];
     }];
@@ -645,7 +882,7 @@
     if (player) {
         [self stop];
     }
-    
+   
     player = [[AVPlayer alloc] initWithPlayerItem:nil];
     
     AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:videoURL options:nil];
@@ -653,26 +890,60 @@
     
     __weak typeof(self) weakSelf = self;
     [asset loadValuesAsynchronouslyForKeys:keys completionHandler:^{
-        weakSelf.currentItem = [AVPlayerItem playerItemWithAsset:asset];
-        [weakSelf.player replaceCurrentItemWithPlayerItem:weakSelf.currentItem];
-        
-        if (playAutomatically) {
-            dispatch_sync(dispatch_get_main_queue(), ^{
-                [weakSelf play];
-            });
+        @try{
+            [weakSelf.currentItem removeObserver:self forKeyPath:@"status" context:nil];
+            weakSelf.currentItem = [AVPlayerItem playerItemWithAsset:asset];
+            [weakSelf.player replaceCurrentItemWithPlayerItem:weakSelf.currentItem];
+            
+            if (playAutomatically) {
+                dispatch_sync(dispatch_get_main_queue(), ^{
+                    [weakSelf play];
+                });
+            }
+        }@catch(id anException){
+            //do nothing, obviously it wasn't attached because an exception was thrown
         }
+       
     }];
-    
+    if (self.current ==0) {
+        prevButton.enabled = NO;
+    }else{
+        prevButton.enabled = YES;
+    }
+    if (self.current == self.total - 1) {
+        nextButton.enabled = NO;
+    }else{
+        nextButton.enabled = YES;
+    }
+    if (self.total == 1) {
+        prevButton.hidden = YES;
+        nextButton.hidden = YES;
+    }
+    lbTitle.text   = filmname;
     [player setAllowsExternalPlayback:YES];
     playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
+
+    if (isInit == YES) {
+        [playerLayer removeFromSuperlayer];
+        
+    }
     [self.layer addSublayer:playerLayer];
-    
-    defaultFrame = self.frame;
-    
-    CGRect frame = self.frame;
-    frame.origin = CGPointZero;
-    [playerLayer setFrame:frame];
-    
+    isInit = YES;
+    if(fullscreen){
+        [playerLayer setFrame:CGRectMake(0, 0, CGRectGetHeight([[UIScreen mainScreen] bounds]), CGRectGetWidth([[UIScreen mainScreen] bounds]))];
+
+    }else{
+        defaultFrame = self.frame;
+        
+        CGRect frame = self.frame;
+        frame.origin = CGPointZero;
+        
+        [playerLayer setFrame:frame];
+    }
+
+  
+//    [playerLayer setFrame:CGRectMake(0, 0, 100, 100)];
+    [self bringSubviewToFront:btnExpand];
     [self bringSubviewToFront:controllersView];
     [self bringSubviewToFront:controllersFullScreenView];
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
@@ -683,9 +954,13 @@
     [player seekToTime:kCMTimeZero];
     [player setRate:0.0f];
     [playButton setSelected:YES];
-    
+    [fplayButton setSelected:YES];
+//     [self addIndicator];
     if (playAutomatically) {
-        [activityIndicator startAnimating];
+//        [self bringSubviewToFront:movieIndicator];
+//        movieIndicator.hidden = NO;
+//        movieIndicator.alpha = 1.0;
+//        [movieIndicator startAnimating];
     }
 }
 
@@ -693,6 +968,8 @@
     
     [progressTimer invalidate];
     progressTimer = nil;
+    [fullScreenProgressTimer invalidate];
+    fullScreenProgressTimer = nil;
     [controllersTimer invalidate];
     controllersTimer = nil;
     
@@ -704,7 +981,10 @@
     
     [player setAllowsExternalPlayback:NO];
     [self stop];
-    [player removeObserver:self forKeyPath:@"rate"];
+//    if (player respondsToSelector:<#(SEL)#>) {
+//        <#statements#>
+//    }
+//    [player removeObserver:self forKeyPath:@"rate"];
     [self setPlayer:nil];
     [self.playerLayer removeFromSuperlayer];
     [self setPlayerLayer:nil];
@@ -715,10 +995,15 @@
     [player play];
     
     [playButton setSelected:YES];
-    
+    [fplayButton setSelected:YES];
     progressTimer = [NSTimer scheduledTimerWithTimeInterval:0.1f
                                                      target:self
                                                    selector:@selector(refreshProgressIndicator)
+                                                   userInfo:nil
+                                                    repeats:YES];
+    fullScreenProgressTimer = [NSTimer scheduledTimerWithTimeInterval:0.1f
+                                                     target:self
+                                                   selector:@selector(refreshFullscreenSlider)
                                                    userInfo:nil
                                                     repeats:YES];
 }
@@ -726,7 +1011,7 @@
 - (void)pause {
     [player pause];
     [playButton setSelected:NO];
-    
+    [fplayButton setSelected:NO];
     if ([delegate respondsToSelector:@selector(playerDidPause)]) {
         [delegate playerDidPause];
     }
@@ -738,6 +1023,10 @@
         [player seekToTime:kCMTimeZero];
         
         [playButton setSelected:NO];
+        [fplayButton setSelected:NO];
+//        [self.currentItem removeObserver:self forKeyPath:@"status"];
+        [self.player removeObserver:self forKeyPath:@"rate"];
+        [playerLayer removeFromSuperlayer];
     }
 }
 
@@ -769,7 +1058,7 @@
 
 - (void)playerStalled:(NSNotification *)notification {
     [self togglePlay:playButton];
-    
+    [self toggleFullscreen:fplayButton];
     if ([delegate respondsToSelector:@selector(playerStalled)]) {
         [delegate playerStalled];
     }
@@ -797,6 +1086,7 @@
                                  [self toggleFullscreen:fullscreenButton];
                              
                              [playButton hideByWidth:YES];
+                             [fplayButton hideByWidth:YES];
                              [fullscreenButton hideByWidth:YES];
                              [spacerView hideByWidth:NO];
                              
@@ -806,6 +1096,7 @@
                              [self showControllers];
                          } else {
                              [playButton hideByWidth:NO];
+                             [fplayButton hideByWidth:NO];
                              [fullscreenButton hideByWidth:NO];
                              [spacerView hideByWidth:YES];
                              
@@ -830,13 +1121,62 @@
     if ([keyPath isEqualToString:@"rate"]) {
         CGFloat rate = [player rate];
         if (rate > 0) {
-            [activityIndicator stopAnimating];
+//            [movieIndicator stopAnimating];
+            if ([delegate respondsToSelector:@selector(playerDidPlaying)]) {
+                [delegate playerDidPlaying];
+            }
         }
     }
 }
+-(void)volumeChanged:(UISlider *)slider{
+    CGFloat vlume = slider.value/100.0;
 
+    if ([player respondsToSelector:@selector(setVolume:)]) {
+        player.volume =vlume;
+    } else {
+        NSArray *audioTracks = currentItem.asset.tracks;
+        
+        // Mute all the audio tracks
+        NSMutableArray *allAudioParams = [NSMutableArray array];
+        for (AVAssetTrack *track in audioTracks) {
+            AVMutableAudioMixInputParameters *audioInputParams =[AVMutableAudioMixInputParameters audioMixInputParameters];
+            [audioInputParams setVolume:vlume atTime:kCMTimeZero];
+            [audioInputParams setTrackID:[track trackID]];
+            [allAudioParams addObject:audioInputParams];
+        }
+        AVMutableAudioMix *audioZeroMix = [AVMutableAudioMix audioMix];
+        [audioZeroMix setInputParameters:allAudioParams];
+        
+        [currentItem setAudioMix:audioZeroMix]; // Mute the player item
+    }
+
+}
+-(void)updatePlayerLayer{
+    CGRect frame = self.frame;
+    frame.origin = CGPointZero;
+    playerLayer.frame = frame;
+    [self layoutIfNeeded];
+}
+- (UIColor *)activityIndicatorView:(MONActivityIndicatorView *)activityIndicatorView
+      circleBackgroundColorAtIndex:(NSUInteger)index {
+    return [ColorSchemeHelper sharedNationHeaderColor];
+}
 - (void)dealloc {
     NSLog(@"dealloc");
+}
+
+#pragma mark - Button Actions
+
+-(void)pressedExpand:(UIButton *)sender{
+    [delegate playerDidExpandLess];
+}
+
+-(void)pressedNext:(UIButton *)sender{
+    [delegate playerDidNext];
+}
+
+-(void)pressedPrev:(UIButton *)sender{
+    [delegate playerDidPrevious];
 }
 
 @end

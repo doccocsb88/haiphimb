@@ -54,7 +54,9 @@
             sql_stmt_film = [sql_stmt_film stringByAppendingString:@"director TEXT, "];
             sql_stmt_film = [sql_stmt_film stringByAppendingString:@"desc TEXT, "];
             sql_stmt_film = [sql_stmt_film stringByAppendingString:@"type INTEGER, "];
-            sql_stmt_film = [sql_stmt_film stringByAppendingString:@"date TEXT)"];
+            sql_stmt_film = [sql_stmt_film stringByAppendingString:@"date TEXT,"];
+            sql_stmt_film = [sql_stmt_film stringByAppendingString:@"epsider TEXT)"];
+
             NSLog(@"slite %@",sql_stmt_film);
 //            if (sqlite3_exec(mySqliteDB, [sql_stmt UTF8String], NULL, NULL, &errMsg) != SQLITE_OK)
 //            {
@@ -139,7 +141,7 @@
     {
         if (userData.userdataID > 0) {
             NSLog(@"Exitsing data, Update Please");
-            NSString *updateSQL = [NSString stringWithFormat:@"UPDATE PHIMBB set filmid = '%d', name = '%@', subname = '%@', img = '%@', img_lanscpae = '%@', cate = '%@', country = '%@', total = '%d', star = '%@', director = '%@', desc = '%@', type ='%d', date = '%@' WHERE id = ?",
+            NSString *updateSQL = [NSString stringWithFormat:@"UPDATE PHIMBB set filmid = '%d', name = '%@', subname = '%@', img = '%@', imglanscape = '%@', cate = '%@', country = '%@', total = '%d', star = '%@', director = '%@', desc = '%@', type ='%d', date = '%@', epsider = '%@' WHERE id = '%d'",
 //                        NSString *updateSQL = [NSString stringWithFormat:@"UPDATE PHIMBB set filmid = '%d', name = '%@', subname = '%@', img = '%@', imglanscape = '%@',type = '%d' date = '%@' WHERE id = ?",
                                    userData.info._id,
                                    userData.info.name,
@@ -153,7 +155,9 @@
                                    userData.info.director,
                                    userData.info.desc,
                                    userData.type,
-                                   userData.date];
+                                   userData.date,
+                                   userData.currentEpsider,
+                                   userData.userdataID];
             
             const char *update_stmt = [updateSQL UTF8String];
             sqlite3_prepare_v2(mySqliteDB, update_stmt, -1, &statement, NULL );
@@ -161,6 +165,9 @@
             if (sqlite3_step(statement) == SQLITE_DONE)
             {
                 success = true;
+                NSLog(@"update suceess");
+            }else{
+                NSLog(@"update failed");
             }
             
         }
@@ -169,7 +176,7 @@
 //            NSString *insertSQL = [NSString stringWithFormat:
 //                                   @"INSERT INTO PHIMBB (filmid,name, subname, img, img_lanscpae, cate, country, total, star, director, desc, style, date) VALUES (%d, \"%@\", \"%@\",\"%@\",\"%@\",\"%@\",\"%@\",%d,\"%@\",\"%@\",\"%@\",%d,\"%@\")",
             NSString *insertSQL = [NSString stringWithFormat:
-                                   @"INSERT INTO PHIMBB (filmid, name, subname, img, imglanscape,cate,country,total,star,director,desc,type, date) VALUES (%d, \"%@\",\"%@\",\"%@\",\"%@\",\"%@\",\"%@\",%d,\"%@\",\"%@\",\"%@\",%d,\"%@\")",
+                                   @"INSERT INTO PHIMBB (filmid, name, subname, img, imglanscape,cate,country,total,star,director,desc,type, date,epsider) VALUES (%d, \"%@\",\"%@\",\"%@\",\"%@\",\"%@\",\"%@\",%d,\"%@\",\"%@\",\"%@\",%d,\"%@\",%@)",
                                    userData.info._id,
                                    userData.info.name,
                                    userData.info.subname,
@@ -182,13 +189,17 @@
                                    userData.info.director,
                                    userData.info.desc,
                                    userData.type,
-                                   userData.date];
+                                   userData.date,
+                                   userData.currentEpsider];
             
             const char *insert_stmt = [insertSQL UTF8String];
             sqlite3_prepare_v2(mySqliteDB, insert_stmt, -1, &statement, NULL);
             if (sqlite3_step(statement) == SQLITE_DONE)
             {
                 success = true;
+                NSLog(@"insert success");
+            }else{
+                NSLog(@"insert failed");
             }
         }
         
@@ -238,7 +249,7 @@
     
     if (sqlite3_open(dbpath, &mySqliteDB) == SQLITE_OK)
     {
-        NSString *querySQL = @"SELECT id,filmid, name, subname, img, imglanscape, cate, country, total, star, director, desc,type, date FROM PHIMBB ORDER BY id DESC LIMIT 5";
+        NSString *querySQL = @"SELECT id,filmid, name, subname, img, imglanscape, cate, country, total, star, director, desc,type, date, epsider FROM PHIMBB ORDER BY id DESC LIMIT 5";
         //                NSString *querySQL = @"SELECT id,filmid, name, subname,img,imglanscape, date FROM PHIMBB";
         const char *query_stmt = [querySQL UTF8String];
         
@@ -282,7 +293,9 @@
                 NSLog(@"LogAtHere 5");
                 
                 data.date =[NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, 13)!=nil?(char *)sqlite3_column_text(statement, 13):(char*)"abc"];
-                
+                data.currentEpsider =  [NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, 14)!=nil?(char *)sqlite3_column_text(statement, 14):(char*)"abc"];
+//                data.type = sqlite3_column_int(statement, 14);
+
                 [userDataList addObject:data];
             }
             sqlite3_finalize(statement);
@@ -300,7 +313,7 @@
     
     if (sqlite3_open(dbpath, &mySqliteDB) == SQLITE_OK)
     {
-        NSString *querySQL = @"SELECT id,filmid, name, subname, img, imglanscape, cate, country, total, star, director, desc,type, date FROM PHIMBB";
+        NSString *querySQL = @"SELECT id,filmid, name, subname, img, imglanscape, cate, country, total, star, director, desc,type, date, epsider FROM PHIMBB";
 //                NSString *querySQL = @"SELECT id,filmid, name, subname,img,imglanscape, date FROM PHIMBB";
         const char *query_stmt = [querySQL UTF8String];
         
@@ -344,7 +357,8 @@
                 NSLog(@"LogAtHere 5");
 
                 data.date =[NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, 13)!=nil?(char *)sqlite3_column_text(statement, 13):(char*)"abc"];
-
+                data.currentEpsider = [NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, 14)!=nil?(char *)sqlite3_column_text(statement, 14):(char*)"abc"];
+//                sqlite3_column_int(statement, 14);
                 [userDataList addObject:data];
             }
             sqlite3_finalize(statement);
@@ -408,6 +422,9 @@
                 NSLog(@"LogAtHere 5");
                 
                 data.date =[NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, 13)!=nil?(char *)sqlite3_column_text(statement, 13):(char*)"abc"];
+                data.currentEpsider = [NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, 14)!=nil?(char *)sqlite3_column_text(statement, 14):(char*)"abc"];
+//                sqlite3_column_int(statement, 14);
+                
             }
             sqlite3_finalize(statement);
         }

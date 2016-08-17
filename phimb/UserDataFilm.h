@@ -12,6 +12,7 @@
 
 @interface UserDataFilm : NSObject
 @property (assign,nonatomic) NSInteger userdataID;
+@property (strong, nonatomic) NSString * currentEpsider;
 @property (strong,nonatomic) FilmInfoDetails *info;
 @property (assign,nonatomic) NSInteger type;
 @property (strong, nonatomic) NSString *date;

@@ -21,12 +21,11 @@
 @required
 - (void)movePanelToOriginalPosition;
 @end
-@interface FilmHomeViewController : UIViewController <UITableViewDataSource,UITableViewDelegate,HomeFilmDelegate,HomeMenuViewDelegate,NSURLConnectionDataDelegate,HistoryDelegate>
+@interface FilmHomeViewController : UIViewController <HomeFilmDelegate,HomeMenuViewDelegate,NSURLConnectionDataDelegate,HistoryDelegate>
 
 @property(strong,nonatomic) id<HomeControllerDelegate> homeDelegate;
 @property (nonatomic,strong) UIButton *homeMenu;
 @property (nonatomic,strong) UILabel *homeTitle;
-
 @property (nonatomic) CGFloat sliderHeight;
-@property (weak,nonatomic) IBOutlet UITableView *filmCollection;
+@property (weak, nonatomic) IBOutlet UICollectionView *filmCollectionView;
 @end

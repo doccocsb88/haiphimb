@@ -9,15 +9,22 @@
 #import "TabRelateView.h"
 #import "ListFilmCell.h"
 #import "EpisodeViewCell.h"
+#import "RecipeCollectionHeaderView.h"
 #define RELATE_CELL_SIZE 30
-@interface TabRelateView()
+@interface TabRelateView() <UITableViewDelegate, UITableViewDataSource>
 {
     NSMutableArray *filmData;
+    NSMutableArray *server2Data;
     CGFloat boxW;
-    int currentSelected;
+    NSIndexPath *currentSelected;
+    int curRow;
 }
-
+@property (strong, nonatomic) UILabel *lbServer1;
+@property (strong, nonatomic) UILabel *lbServer2;
 //@property (strong,nonatomic) NSMutableDictionary *episodeData;
+@property (strong, nonatomic) UICollectionView *listphim1;
+@property (strong, nonatomic) UICollectionView *listphim2;
+
 @property (strong, nonatomic) UIActivityIndicatorView *indicator;
 @end
 
@@ -30,7 +37,7 @@
         _viewWidth =frame.size.width;
         _viewHeight = frame.size.height;
         boxW = frame.size.width/3;
-        self.backgroundColor = [UIColor purpleColor];
+        self.backgroundColor = [UIColor whiteColor];
         [self initData];
         [self _init];
     }
@@ -58,7 +65,8 @@
 }
 */
 -(void)_init{
-    currentSelected = 0;
+    curRow = 0;
+    currentSelected = nil;
     [self initRelateFilmCollection];
     [self initIndicator];
    
@@ -66,6 +74,7 @@
 -(void)initData{
 //_episodeData = [[NSMutableDictionary alloc] init];
     filmData = [[NSMutableArray alloc] init];
+    server2Data = [[NSMutableArray alloc] init];
 }
 -(void)initIndicator{
     _indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -77,20 +86,99 @@
     [self addSubview:_indicator];
 }
 -(void)initRelateFilmCollection{
+    _tbServes = [[UITableView alloc] initWithFrame:CGRectMake(70, 5, _viewWidth - 80, _viewHeight - 10)];
+    _tbServes.delegate = self;
+    _tbServes.dataSource = self;
+    [_tbServes registerClass:[UITableViewCell class] forCellReuseIdentifier:@"tapphimcell"];
+    _tbServes.alwaysBounceVertical = YES;
+    _tbServes.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    _tbServes.separatorStyle = UITableViewRowActionStyleDefault;
+    _lbServer1 = [[UILabel alloc] initWithFrame:CGRectMake(5, 5, 60, 40)];
+    _lbServer1.font = [UIFont systemFontOfSize:12];
+    _lbServer2 = [[UILabel alloc] initWithFrame:CGRectMake(5, 5 + 40, 60, 40)];
+    _lbServer2.font = [UIFont systemFontOfSize:12];
+    _lbServer1.text = @"Server 1";
+    _lbServer2.text = @"Server 2";
+    _lbServer1.hidden = YES;
+    _lbServer2.hidden = YES;
+    [self addSubview:_lbServer1];
+    [self addSubview:_lbServer2];
+    [self addSubview:_tbServes];
+  
+}
+#pragma mark-
+
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 1;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    return 40.0;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    NSInteger numberOfSection = 0;
+    if (filmData && filmData.count > 0) {
+        numberOfSection++;
+    }
+    if (server2Data && server2Data.count > 0) {
+        numberOfSection++;
+    }
+    if (numberOfSection == 1) {
+        _lbServer1.hidden = NO;
+    }
+    if (numberOfSection == 2) {
+        _lbServer1.hidden = NO;
+        _lbServer2.hidden = NO;
+    }
+    return numberOfSection;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"tapphimcell" forIndexPath:indexPath];
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
     [flowLayout setItemSize:CGSizeMake(RELATE_CELL_SIZE   , RELATE_CELL_SIZE)];
-    [flowLayout setScrollDirection:UICollectionViewScrollDirectionVertical];
+    [flowLayout setScrollDirection:UICollectionViewScrollDirectionHorizontal];
     [flowLayout setSectionInset:UIEdgeInsetsMake(5, 5, 5, 5)];
+//    flowLayout.headerReferenceSize = CGSizeMake(_viewWidth, 20);
+    if (indexPath.row == 0) {
+        if (_listphim1) {
+            [_listphim1 removeFromSuperview];
+            _listphim1 = nil;
+        }
+        if (_listphim1 == nil) {
+            _listphim1 = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 0, _viewWidth - 70  , 40) collectionViewLayout:flowLayout];
+            [_listphim1 registerNib:[UINib nibWithNibName:@"EpisodeCell" bundle:[NSBundle mainBundle]] forCellWithReuseIdentifier:@"episodeViewCell"];
+            [_listphim1 registerNib:[UINib nibWithNibName:@"CollectionHeaderView" bundle:[NSBundle mainBundle]] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"sectionHeaderView"];
+            //    _listRelateFilm.collectionViewLayout = flowLayout;
+            //    _listFilm.frame = ;
+            _listphim1.tag = indexPath.row;
+            _listphim1.dataSource = self;
+            _listphim1.delegate = self;
+            _listphim1.backgroundColor = [UIColor clearColor];
+            [_listphim1 setShowsHorizontalScrollIndicator:NO];
+            [cell.contentView addSubview:_listphim1];
+        }
+       
 
-    _listRelateFilm = [[UICollectionView alloc] initWithFrame:CGRectMake(10, 5, _viewWidth - 20  , _viewHeight - 10) collectionViewLayout:flowLayout];
-    [_listRelateFilm registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"epCell"];
-//    _listRelateFilm.collectionViewLayout = flowLayout;
-    //    _listFilm.frame = ;
-    _listRelateFilm.dataSource = self;
-    _listRelateFilm.delegate = self;
-    _listRelateFilm.backgroundColor = [UIColor clearColor];
-    [_listRelateFilm setShowsHorizontalScrollIndicator:NO];
-    [self addSubview:_listRelateFilm];
+    }else if(indexPath.row == 1){
+        if (_listphim2) {
+            [_listphim2 removeFromSuperview];
+            _listphim2 = nil;
+        }
+        if (_listphim2 == nil) {
+            _listphim2 = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 0, _viewWidth - 70  , 40) collectionViewLayout:flowLayout];
+            [_listphim2 registerNib:[UINib nibWithNibName:@"EpisodeCell" bundle:[NSBundle mainBundle]] forCellWithReuseIdentifier:@"episodeViewCell"];
+            [_listphim2 registerNib:[UINib nibWithNibName:@"CollectionHeaderView" bundle:[NSBundle mainBundle]] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"sectionHeaderView"];
+            //    _listRelateFilm.collectionViewLayout = flowLayout;
+            //    _listFilm.frame = ;
+            _listphim2.tag = indexPath.row;
+            _listphim2.dataSource = self;
+            _listphim2.delegate = self;
+            _listphim2.backgroundColor = [UIColor clearColor];
+            [_listphim2 setShowsHorizontalScrollIndicator:NO];
+            [cell.contentView addSubview:_listphim2];
+        }
+    }
+   
+    return cell;
 }
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
@@ -120,6 +208,14 @@
     
     return count;
      */
+//    NSInteger numberOfSection = 0;
+//    if (filmData && filmData.count > 0) {
+//        numberOfSection++;
+//    }
+//    if (server2Data && server2Data.count > 0) {
+//        numberOfSection++;
+//    }
+//    return numberOfSection;
     return 1;
 }
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
@@ -132,45 +228,131 @@
     
     return 0;
     */
-    return filmData.count;
+    if ([self tableView:self.tbServes numberOfRowsInSection:0] == 1) {
+        if (filmData && filmData.count > 0) {
+            return filmData.count;
+        }
+        if (server2Data && server2Data.count > 0) {
+            return server2Data.count;
+        }
+        return 0;
+    }
+    int index = (int)collectionView.tag;
+    if (index == 0) {
+        return filmData.count;
+    }else{
+        return server2Data.count;
+
+    }
 }
 -(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath{
     
-    static NSString *cellIdentifier = @"epCell";
+    static NSString *cellIdentifier = @"episodeViewCell";
     
-    UICollectionViewCell *cell = (UICollectionViewCell*)[collectionView dequeueReusableCellWithReuseIdentifier:cellIdentifier forIndexPath:indexPath];
+    EpisodeViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:cellIdentifier forIndexPath:indexPath];
     if(cell==nil){
         
-        cell = [[UICollectionViewCell alloc] initWithFrame:CGRectMake(0, 0, RELATE_CELL_SIZE, RELATE_CELL_SIZE)];
+        cell = [[EpisodeViewCell alloc] initWithFrame:CGRectMake(0, 0, RELATE_CELL_SIZE, RELATE_CELL_SIZE)];
     }
-    UILabel *lb = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, RELATE_CELL_SIZE, RELATE_CELL_SIZE)];
-    lb.tag = indexPath.row;
-    lb.text = [NSString stringWithFormat:@"%d",indexPath.row+1];
-    lb.textAlignment  = NSTextAlignmentCenter;
-    [cell.contentView addSubview:lb];
-    lb.layer.cornerRadius = RELATE_CELL_SIZE/2;
-    lb.clipsToBounds = YES;
-    lb.layer.borderWidth =.5f;
-    lb.layer.borderColor = [[UIColor redColor] CGColor];
-    if (indexPath.row==currentSelected) {
-        lb.textColor = [UIColor whiteColor];
-        lb.backgroundColor = [UIColor redColor];
+    int index = (int)collectionView.tag;
+   
+        if (currentSelected.row == indexPath.row && currentSelected.section == indexPath.section) {
+            NSLog(@"epsider : begin");
 
-    }else{
-        lb.backgroundColor = [UIColor whiteColor];
+             if (index == curRow) {
+                 [cell setEpsisodeContent:indexPath.row +1 status:2];//watching
+                 NSLog(@"epsider : wathching");
+             }else{
+                 [cell setEpsisodeContent:indexPath.row +1 status:3];//none
+                 NSLog(@"epsider : none");
+             }
+        }else{
+            
+            [cell setEpsisodeContent:indexPath.row +1 status:3];//none
+            NSLog(@"epsider : failed: %d -- %d",currentSelected.section,currentSelected.item);
 
-    }
-        return cell;
+//            if (index == curRow) {
+//                [cell setEpsisodeContent:indexPath.row +1 status:2];//watching
+//            }else{
+//                [cell setEpsisodeContent:indexPath.row +1 status:3];//none
+//                
+//            }
+        }
+   
+    
+    return cell;
 }
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    int index = (int)collectionView.tag;
 
-    NSIndexPath *preIndexPath  = [NSIndexPath indexPathForItem:currentSelected inSection:indexPath.section];
-    currentSelected = indexPath.row;
+    if(currentSelected.row != indexPath.row || index != curRow){
+//    NSIndexPath *preIndexPath  = [NSIndexPath indexPathForItem:currentSelected.row inSection:currentSelected.section];
+    currentSelected = indexPath;
+        if (index !=  curRow) {
+          
+            curRow = index;
+        }
+        if (_listphim1) {
+            [_listphim1 reloadData];
+        }
+        if (_listphim2) {
+            [_listphim2 reloadData];
+        }
+//    [self.listRelateFilm reloadItemsAtIndexPaths:@[indexPath,preIndexPath]];
+    
+        if ([playvideoDelegate respondsToSelector:@selector(playMovieAtIndex:epside:)]) {
+            NSString *url = nil;
+            if ([self tableView:self.tbServes numberOfRowsInSection:0] == 1) {
+                if (filmData && filmData.count > 0) {
+                    url = [filmData objectAtIndex:indexPath.row];
+                }
+                if (server2Data && server2Data.count > 0) {
+                    url = [server2Data objectAtIndex:indexPath.row];
+                }
+            }else if([self tableView:self.tbServes numberOfRowsInSection:0] == 2){
+                if (indexPath.section == 0) {
+                    url = [filmData objectAtIndex:indexPath.row];
+                }else if(indexPath.section == 1){
+                    url = [server2Data objectAtIndex:indexPath.row];
+                }
+            }
+            if (url) {
+                [playvideoDelegate playMovieAtIndex:url epside:indexPath];
 
-    [self.listRelateFilm reloadItemsAtIndexPaths:@[indexPath,preIndexPath]];
-
-
+            }
+        }
+    }
 }
+
+
+//- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+//{
+// 
+//    UICollectionReusableView *reusableview = nil;
+//    
+//    if (kind == UICollectionElementKindSectionHeader) {
+//        RecipeCollectionHeaderView *sectionHeaderView = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"sectionHeaderView" forIndexPath:indexPath];
+//        NSString *title = [[NSString alloc]initWithFormat:@"Server #%i", indexPath.section + 1];
+//        sectionHeaderView.title.text = title;
+////        UIImage *headerImage = [UIImage imageNamed:@"header_banner.png"];
+////        sectionHeaderView.backgroundImage.image = headerImage;
+////        if ([_listRelateFilm numberOfItemsInSection:indexPath.section] == 0) {
+////            sectionHeaderView.frame = CGRectMake(0, 0, _viewWidth, 0);
+////            sectionHeaderView.backgroundColor = [UIColor clearColor];
+////        }
+//        sectionHeaderView.backgroundColor = [UIColor whiteColor];
+//        sectionHeaderView.title.textColor = [UIColor blackColor];
+//        reusableview = sectionHeaderView;
+//    }
+//    
+//    if (kind == UICollectionElementKindSectionFooter) {
+//        UICollectionReusableView *footerview = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionFooter withReuseIdentifier:@"FooterView" forIndexPath:indexPath];
+//        
+//        reusableview = footerview;
+//    }
+//    
+//    return reusableview;
+//}
 //-(void)collectionView:(UICollectionView *)collectionView didHighlightItemAtIndexPath:(NSIndexPath *)indexPath{
 //    UICollectionViewCell *cell= [_listRelateFilm cellForItemAtIndexPath:indexPath];
 //    cell.layer.backgroundColor = [[UIColor redColor] CGColor];
@@ -209,10 +391,22 @@
 //   // }];
 //    
 //}
--(void)setDataArrayEpsolider2:(NSArray *)data{
+-(void)setDataArrayEpsolider2:(NSArray *)data server2:(NSArray *)servers currentIndexPath:(NSIndexPath *)curIndexPath
+{
+    currentSelected = curIndexPath;
     [filmData removeAllObjects];
-    [filmData addObjectsFromArray:data];
-    [_listRelateFilm reloadData];
+    [server2Data removeAllObjects];
+
+     if (data && [data isKindOfClass:[NSArray class]]) {
+         [filmData addObjectsFromArray:data];
+     }
+    
+    if (servers && [servers isKindOfClass:[NSArray class]]) {
+        [server2Data addObjectsFromArray:servers];
+    }
+    
+    //
+    [self.tbServes reloadData];
     [_indicator stopAnimating];
     [_indicator setHidden:YES];
     NSLog(@"BindDataToEpsi");

@@ -11,6 +11,7 @@
 #import "FilmViewCell.h"
 #import "AppDelegate.h"
 #import "PhimbAPI.h"
+#import <RealReachability.h>
 @interface FilmViewController () <UICollectionViewDataSource,UICollectionViewDelegate,NSURLConnectionDataDelegate>
 {
     NSMutableArray *dataArray;
@@ -19,17 +20,23 @@
 
 }
 @property (strong, nonatomic) UICollectionView *clFilm;
+@property (assign, nonatomic) ReachabilityStatus curStatus;
 @end
 @implementation FilmViewController
-
+@synthesize curStatus;
 -(instancetype)initWithGenreKey:(Genre *)genre{
     self = [super init];
     if (self) {
+        curStatus = RealStatusUnknown;
         paramPage = 1;
         dataArray = [[NSMutableArray alloc] init];
         self.genre = genre;
         self.view.backgroundColor = [UIColor whiteColor];
         [self callWebservide:self.genre];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(networkChanged:)
+                                                     name:kRealReachabilityChangedNotification
+                                                   object:nil];
     }
     return self;
 }
@@ -40,9 +47,9 @@
 -(void)setupViews{
     UICollectionViewFlowLayout *flow = [[UICollectionViewFlowLayout alloc] init];
     CGFloat itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /3 - 10;
-    flow.itemSize = CGSizeMake(itemSize, itemSize *3/2);
+    flow.itemSize = CGSizeMake(itemSize, itemSize *3/2 + 40);
     flow.scrollDirection = UICollectionViewScrollDirectionVertical;
-    
+    flow.sectionInset = UIEdgeInsetsMake(5, 5, 5, 5);
     self.clFilm = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height - 64 - 50) collectionViewLayout:flow];
     
     self.clFilm.delegate = self;
@@ -189,5 +196,18 @@
     
     
 }
-
+- (void)networkChanged:(NSNotification *)notification
+{
+    RealReachability *reachability = (RealReachability *)notification.object;
+    ReachabilityStatus status = [reachability currentReachabilityStatus];
+    if (status != curStatus) {
+        curStatus = status;
+        NSLog(@"currentStatus:%@",@(status));
+        if (status == RealStatusViaWiFi || status == RealStatusViaWWAN) {
+            [self callWebservide:self.genre];
+            
+        }
+    }
+    
+}
 @end

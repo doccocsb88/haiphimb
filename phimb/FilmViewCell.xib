@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9532" systemVersion="14F1605" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9532" systemVersion="14F1808" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9530"/>
@@ -14,13 +14,10 @@
                 <rect key="frame" x="0.0" y="0.0" width="100" height="150"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="0VY-J7-vIl">
-                        <rect key="frame" x="5" y="5" width="90" height="105"/>
-                    </imageView>
-                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text=" kjghj jbmh jmhbm mjhbmh b" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="shi-Nl-H5f">
-                        <rect key="frame" x="0.0" y="110" width="100" height="40"/>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text=" kjghj jbmh jmhbm mjhbmh b" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="shi-Nl-H5f">
+                        <rect key="frame" x="0.0" y="120" width="100" height="30"/>
                         <constraints>
-                            <constraint firstAttribute="height" constant="40" id="o3K-Ds-I6N"/>
+                            <constraint firstAttribute="height" constant="30" id="o3K-Ds-I6N"/>
                         </constraints>
                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                         <color key="textColor" red="1" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
@@ -29,24 +26,33 @@
                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
                         </variation>
                     </label>
+                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="0VY-J7-vIl">
+                        <rect key="frame" x="0.0" y="5" width="100" height="115"/>
+                    </imageView>
                 </subviews>
                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
             </view>
             <constraints>
-                <constraint firstItem="shi-Nl-H5f" firstAttribute="top" secondItem="0VY-J7-vIl" secondAttribute="bottom" id="6xw-Vz-jUM"/>
-                <constraint firstItem="0VY-J7-vIl" firstAttribute="leading" secondItem="VMf-17-ntF" secondAttribute="leading" constant="5" id="7vP-Lh-7vE"/>
-                <constraint firstAttribute="trailing" secondItem="0VY-J7-vIl" secondAttribute="trailing" constant="5" id="Efj-jQ-Jg9"/>
+                <constraint firstItem="0VY-J7-vIl" firstAttribute="leading" secondItem="VMf-17-ntF" secondAttribute="leading" id="4MV-15-15A"/>
                 <constraint firstAttribute="bottom" secondItem="shi-Nl-H5f" secondAttribute="bottom" id="T7K-nx-ZEP"/>
-                <constraint firstItem="0VY-J7-vIl" firstAttribute="top" secondItem="VMf-17-ntF" secondAttribute="top" constant="5" id="f8M-T5-PxD"/>
+                <constraint firstItem="0VY-J7-vIl" firstAttribute="top" secondItem="VMf-17-ntF" secondAttribute="top" constant="5" id="ZHd-eh-1hb"/>
+                <constraint firstAttribute="bottom" secondItem="0VY-J7-vIl" secondAttribute="bottom" id="dGE-EF-Yyy"/>
+                <constraint firstAttribute="trailing" secondItem="0VY-J7-vIl" secondAttribute="trailing" id="gIF-De-4dO"/>
                 <constraint firstItem="shi-Nl-H5f" firstAttribute="leading" secondItem="VMf-17-ntF" secondAttribute="leading" id="iFY-PB-9rR"/>
+                <constraint firstItem="shi-Nl-H5f" firstAttribute="top" secondItem="0VY-J7-vIl" secondAttribute="bottom" id="jCc-j7-4I9"/>
                 <constraint firstAttribute="trailing" secondItem="shi-Nl-H5f" secondAttribute="trailing" id="pvM-k8-NO6"/>
             </constraints>
             <size key="customSize" width="161" height="197"/>
+            <variation key="default">
+                <mask key="constraints">
+                    <exclude reference="dGE-EF-Yyy"/>
+                </mask>
+            </variation>
             <connections>
                 <outlet property="lbTitle" destination="shi-Nl-H5f" id="9fQ-5E-Qjd"/>
                 <outlet property="thumbnail" destination="0VY-J7-vIl" id="lTu-ir-MYi"/>
             </connections>
-            <point key="canvasLocation" x="211.5" y="253.5"/>
+            <point key="canvasLocation" x="211" y="253"/>
         </collectionViewCell>
     </objects>
 </document>

@@ -11,6 +11,7 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 //#import <FB>
+#define FACEBOOK_COMMENT_URL @"https://www.giaiphapcong.vn/resources/"
 @interface TabCommentView() <UIWebViewDelegate>
 {
     CGFloat viewWidh;
@@ -104,7 +105,7 @@
     
 ////    NSString *fullURL = [NSString stringWithFormat:@"http://sukienmienbac.com.vn/fbcomment.php?id=%d",filmId];
 //    
-    NSString *fullURL = [NSString stringWithFormat:@"http://sukienmienbac.com.vn/phimb.html?id=%d",filmId];
+    NSString *fullURL = [NSString stringWithFormat:@"%@phimb.html?id=%d",FACEBOOK_COMMENT_URL,filmId];
     NSURL *url = [NSURL URLWithString:fullURL];
     [webview loadRequest:[NSURLRequest requestWithURL:url]];
 //    UIScrollView *scroll = [UIScrollView alloc] initWithFrame:CGRectMake(0, 40, viewWidh, _webview.con)

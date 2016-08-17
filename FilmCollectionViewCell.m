@@ -12,7 +12,7 @@
 #import "ListFilmCell.h"
 #import "PlayVideoViewController.h"
 #import "SearchResultViewCell.h"
-
+#import <RealReachability.h>
 #define SEPARATOR_HEIGHT 1
 const NSString *API_URL_HOME_FILM = @"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/home/";
 @interface FilmCollectionViewCell()
@@ -26,31 +26,38 @@ const NSString *API_URL_HOME_FILM = @"http://www.phimb.net/api/list/538c7f456122
 }
 @property (nonatomic, strong) UIView *separatorView;
 
-
+@property (nonatomic, strong) UIRefreshControl *refreshControl;
 
 @property (nonatomic) CGFloat actualWidth;
 @property (nonatomic) CGFloat actualHeight;
-
+@property (assign, nonatomic)  ReachabilityStatus curStatus;
 @end
 @implementation FilmCollectionViewCell
-@synthesize homeDeleage;
+@synthesize homeDeleage, curStatus;
 
 - (void)awakeFromNib {
     // Initialization code
     [self _init];
-    
+    curStatus = RealStatusUnknown;
+
     UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
         // portrait
         self.actualHeight = self.frame.size.height;
         self.actualWidth = CGRectGetWidth([UIScreen mainScreen].bounds);
-        boxW = self.actualWidth / 3 - 30/3;
+        boxW = self.actualWidth / 3 - 10 ;
     } else {
         self.actualHeight = self.frame.size.width;
         self.actualWidth = CGRectGetHeight([UIScreen mainScreen].bounds);
-        boxW = self.actualWidth / 3 - 30/3;
+        boxW = self.actualWidth / 3  - 10;
         // landscape
     }
+    [self initRefreshControl];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(networkChanged:)
+                                                 name:kRealReachabilityChangedNotification
+                                               object:nil];
+
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
@@ -142,14 +149,15 @@ const NSString *API_URL_HOME_FILM = @"http://www.phimb.net/api/list/538c7f456122
 }
 -(void)initListFilmView{
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
-    [flowLayout setItemSize:CGSizeMake(boxW  , boxW*3/2)];
-    [flowLayout setScrollDirection:UICollectionViewScrollDirectionVertical];
-    [flowLayout setSectionInset:UIEdgeInsetsMake(5, 5, 5, 5)];
+    flowLayout.itemSize = CGSizeMake(boxW, boxW *3/2 + 40);
+    flowLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
+    flowLayout.sectionInset = UIEdgeInsetsMake(5, 5, 5, 5);
     
   
     [_listFilm registerClass:[ListFilmCell class] forCellWithReuseIdentifier:@"cvCell"];
     //    _listFilm.collectionViewLayout = flowLayout;
     //    _listFilm.frame = ;
+    
     _listFilm.dataSource = self;
     _listFilm.delegate = self;
     
@@ -157,10 +165,20 @@ const NSString *API_URL_HOME_FILM = @"http://www.phimb.net/api/list/538c7f456122
     
 }
 
+-(void)initRefreshControl{
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    self.refreshControl.backgroundColor = [UIColor whiteColor];
+    self.refreshControl.tintColor = [UIColor whiteColor];
+    self.refreshControl.tintColor = [UIColor grayColor];
+    [self.refreshControl addTarget:self action:@selector(refresh:) forControlEvents:UIControlEventValueChanged];
+    [self.listFilm addSubview:self.refreshControl];
+//    self.tbFilm.alwaysBounceVertical = YES;
+}
+
 - (void)_initWithHeight:(CGFloat)height width:(CGFloat)width {
     self.actualHeight = height;
     self.actualWidth = width;
-    boxW = self.actualWidth / 3 - 30/3;
+    boxW = self.actualWidth / 3 - 10;
 }
 
 
@@ -236,12 +254,8 @@ const NSString *API_URL_HOME_FILM = @"http://www.phimb.net/api/list/538c7f456122
 }
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    //    [[SlideNavigationController sharedInstance] changedRightToList];
+    
     SearchResultItem *item = [filmData objectAtIndex:indexPath.row];
-//    PlayVideoViewController *vc= [[PlayVideoViewController alloc] init];
-//    [vc prepareFilmData:item];
-//    //    [self.navigationController pushViewController:vc animated:YES];
-//    NSLog(@"initFilmInfo %d %@ %@ %@ ",item._id,item.name,item.img,item.imglanscape);
     [homeDeleage presentPlayMovieController:item];
     NSLog(@"didselect--->3");
 
@@ -371,5 +385,37 @@ const NSString *API_URL_HOME_FILM = @"http://www.phimb.net/api/list/538c7f456122
     
     
 }
+- (void)refresh:(UIRefreshControl *)refreshControl {
+    // Do your job, when done:
+    [self.listFilm reloadData];
+    
+    // End the refreshing
+    if (self.refreshControl) {
+        
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"MMM d, h:mm a"];
+        NSString *title = [NSString stringWithFormat:@"Last update: %@", [formatter stringFromDate:[NSDate date]]];
+        NSDictionary *attrsDictionary = [NSDictionary dictionaryWithObject:[UIColor whiteColor]
+                                                                    forKey:NSForegroundColorAttributeName];
+        NSAttributedString *attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:attrsDictionary];
+        self.refreshControl.attributedTitle = attributedTitle;
+        
+        [self.refreshControl endRefreshing];
+    }
+}
 
+- (void)networkChanged:(NSNotification *)notification
+{
+    RealReachability *reachability = (RealReachability *)notification.object;
+    ReachabilityStatus status = [reachability currentReachabilityStatus];
+    if (status != curStatus) {
+        curStatus = status;
+        NSLog(@"currentStatus:%@",@(status));
+        if (status == RealStatusViaWiFi || status == RealStatusViaWWAN) {
+            [self callWebService];
+
+        }
+    }
+    
+}
 @end

@@ -19,10 +19,12 @@
 @property (assign,nonatomic) NSInteger layoutStyle;
 @property (strong, nonatomic) UIImageView *thumbnail;
 @property (strong, nonatomic) UILabel *filmNameVi;
+@property (strong, nonatomic) UILabel *lbSotap;
 @property (strong, nonatomic) UIActivityIndicatorView *indicator;
 @property (strong,nonatomic) id<RequestImageDelegate> imgDelegate;
 //@property (strong, nonatomic) UILabel *filmNameEn;
 -(id)initWithStyle: (CGFloat) width height: (CGFloat) height;
 -(void)setContentView : (SearchResultItem *)item atIndex:(NSInteger)index;
+-(void)setContentView : (SearchResultItem *)item atIndex:(NSInteger)index single:(BOOL)single;
 
 @end

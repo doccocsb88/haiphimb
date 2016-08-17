@@ -6,6 +6,9 @@ platform :ios, '8.0'
 target 'phimb' do
   pod 'SDWebImage', '~> 3.7'
   pod 'MarqueeLabel', '~> 2.7'
+  pod 'RealReachability'
+   pod 'Firebase/Core'
+  pod 'Firebase/AdMob'
 end
 
 target 'phimbTests' do

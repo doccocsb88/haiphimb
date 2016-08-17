@@ -9,7 +9,7 @@
 #import "ListFilmViewController.h"
 #import "ListFilmCell.h"
 #import "PlayVideoViewController.h"
-
+#import "AppDelegate.h"
 #define NUMBER_COLUMN 3
 const NSString *API_URL_LIST_FILM = @"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/home/";
 @interface ListFilmViewController ()
@@ -137,13 +137,12 @@ const NSString *API_URL_LIST_FILM = @"http://www.phimb.net/api/list/538c7f456122
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
 //    [[SlideNavigationController sharedInstance] changedRightToList];
+    if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
+
     SearchResultItem *item = [filmData objectAtIndex:indexPath.row];
-    PlayVideoViewController *vc= [[PlayVideoViewController alloc] init];
-    [vc prepareFilmData:item];
-//    [self.navigationController pushViewController:vc animated:YES];
-    NSLog(@"initFilmInfo %ld %@ %@ %@ ",item._id,item.name,item.img,item.imglanscape);
-    [self presentViewController:vc animated:YES completion:nil];
-    
+    [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
+
+    }
 }
 
 #pragma mark - call php api

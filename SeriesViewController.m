@@ -12,8 +12,11 @@
 #import "Genre.h"
 #import "PhimbAPI.h"
 #import "ColorSchemeHelper.h"
+#import "PlayVideoViewController.h"
+#import "AppDelegate.h"
+#import <RealReachability.h>
 #define NUMBER_COLUMN 3
-const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/cat/";
+const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f456122cca4d87bf6de9dd958b5/home/";
 @interface SeriesViewController () <UICollectionViewDataSource, UICollectionViewDelegate,NSURLConnectionDataDelegate,RequestImageDelegate>
 {
     NSMutableArray *dataArray;
@@ -25,21 +28,36 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
 @property (weak, nonatomic) IBOutlet UIView *headerView;
 @property (weak, nonatomic) IBOutlet UILabel *lbTitle;
 @property (strong, nonatomic) Genre *genre;
-
+@property (strong, nonatomic) UIRefreshControl *refreshControl;
+@property (strong, nonatomic) UIActivityIndicatorView *activityIndicator;
+@property (assign, nonatomic) ReachabilityStatus curStatus;
 @end
 
 @implementation SeriesViewController
-
+@synthesize curStatus;
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self setNeedsStatusBarAppearanceUpdate];
     // Do any additional setup after loading the view.
-    self.genre = [[Genre alloc] initWithTitle:@"Series" withKey:@"phim-bo"];
+    curStatus = RealStatusUnknown;
+    self.genre = [[Genre alloc] initWithTitle:@"Series" withKey:@"phim-le"];
     [self initData];
     [self setUp];
+    [self initRefreshControl];
     [self callWebservide:self.genre];
-
+    _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    _activityIndicator.center = self.view.center;
+    _activityIndicator.hidesWhenStopped = YES;
+    [self.view addSubview:_activityIndicator];
+    [_activityIndicator stopAnimating];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(networkChanged:)
+                                                 name:kRealReachabilityChangedNotification
+                                               object:nil];
 }
-
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
@@ -52,9 +70,9 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
     UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
         // portrait
-        boxW =self.view.frame.size.width/NUMBER_COLUMN-30/NUMBER_COLUMN;
+        boxW =self.view.frame.size.width/NUMBER_COLUMN- 10;
     } else {
-        boxW =self.view.frame.size.height/NUMBER_COLUMN-30/NUMBER_COLUMN;
+        boxW =self.view.frame.size.height/NUMBER_COLUMN-10;
         // landscape
     }
     //setupHeader
@@ -66,14 +84,22 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
     _lbTitle.textColor = [UIColor whiteColor];
     //
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
-    [flowLayout setItemSize:CGSizeMake(boxW  , boxW*3/2)];
+    [flowLayout setItemSize:CGSizeMake(boxW  , boxW*3/2 + 40)];
     [flowLayout setScrollDirection:UICollectionViewScrollDirectionVertical];
-    [flowLayout setSectionInset:UIEdgeInsetsMake(0, 0, 0, 0)];
+    [flowLayout setSectionInset:UIEdgeInsetsMake(5, 5, 5, 5)];
     self.clFilms.collectionViewLayout = flowLayout;
     [self.clFilms registerClass:[ListFilmCell class] forCellWithReuseIdentifier:@"filmcell"];
-    self.clFilms.backgroundColor = [UIColor yellowColor];
+    self.clFilms.backgroundColor = [UIColor whiteColor];
 }
-
+-(void)initRefreshControl{
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    self.refreshControl.backgroundColor = [UIColor whiteColor];
+    self.refreshControl.tintColor = [UIColor whiteColor];
+    self.refreshControl.tintColor = [UIColor grayColor];
+    [self.refreshControl addTarget:self action:@selector(refresh:) forControlEvents:UIControlEventValueChanged];
+    [self.clFilms addSubview:self.refreshControl];
+    //    self.tbFilm.alwaysBounceVertical = YES;
+}
 #pragma mark-
 #pragma mark-
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
@@ -101,6 +127,15 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
     }
   
     return cell;
+}
+
+-(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
+
+    SearchResultItem *item = [dataArray objectAtIndex:indexPath.item];
+    [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
+    }
+
 }
 -(void)setImageAtIndex:(NSInteger)index image:(UIImage *)img{
     SearchResultItem *item = [dataArray objectAtIndex:index];
@@ -207,7 +242,7 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
                                 //[_listFilm reloadData];
                             }];
                         }
-                        
+                        [_activityIndicator stopAnimating];
                     });
                 });
             }
@@ -218,4 +253,36 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
     
 }
 
+- (void)refresh:(UIRefreshControl *)refreshControl {
+    // Do your job, when done:
+    [self.clFilms reloadData];
+    
+    // End the refreshing
+    if (self.refreshControl) {
+        
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"MMM d, h:mm a"];
+        NSString *title = [NSString stringWithFormat:@"Last update: %@", [formatter stringFromDate:[NSDate date]]];
+        NSDictionary *attrsDictionary = [NSDictionary dictionaryWithObject:[UIColor whiteColor]
+                                                                    forKey:NSForegroundColorAttributeName];
+        NSAttributedString *attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:attrsDictionary];
+        self.refreshControl.attributedTitle = attributedTitle;
+        
+        [self.refreshControl endRefreshing];
+    }
+}
+- (void)networkChanged:(NSNotification *)notification
+{
+    RealReachability *reachability = (RealReachability *)notification.object;
+    ReachabilityStatus status = [reachability currentReachabilityStatus];
+    if (status != curStatus) {
+        curStatus = status;
+        NSLog(@"currentStatus:%@",@(status));
+        if (status == RealStatusViaWiFi || status == RealStatusViaWWAN) {
+            [self callWebservide:self.genre];
+            
+        }
+    }
+    
+}
 @end

@@ -11,6 +11,8 @@
 @interface FilmViewCell : UICollectionViewCell
 @property (weak, nonatomic) IBOutlet UILabel *lbTitle;
 @property (weak, nonatomic) IBOutlet UIImageView *thumbnail;
+@property (strong, nonatomic) UILabel *lbSotap;
+
 @property (strong, nonatomic) UIActivityIndicatorView *indicator;
 -(void)setContentView:(SearchResultItem *)item;
 @end

@@ -10,7 +10,6 @@
 #import "PhimbAPI.h"
 #import "ColorSchemeHelper.h"
 #import "FilmViewCell.h"
-#import "SearchResultItem.h"
 @interface NationViewCell() <UICollectionViewDataSource,UICollectionViewDelegate,NSURLConnectionDataDelegate>
 {
     NSMutableArray *dataArray;
@@ -26,9 +25,12 @@
     filmData = [[NSMutableArray alloc] init];
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
     flowLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
-    flowLayout.sectionInset = UIEdgeInsetsMake(10, 10, 0, 0);
-    CGFloat itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /3;
-    flowLayout.itemSize = CGSizeMake(self.frame.size.height*2/3  - 40, self.frame.size.height - 45) ;
+    CGFloat itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /3 - 30/3;
+//     boxW = self.actualWidth / 3 - 30/3;
+    [flowLayout setItemSize:CGSizeMake(itemSize  , itemSize*3/2 + 40)];
+    [flowLayout setScrollDirection:UICollectionViewScrollDirectionHorizontal];
+    [flowLayout setSectionInset:UIEdgeInsetsMake(5, 8, 5, 8)];
+  
     [self.clFilm registerNib:[UINib nibWithNibName:@"FilmViewCell" bundle:[NSBundle mainBundle]] forCellWithReuseIdentifier:@"filmcell"];
     [self.clFilm setCollectionViewLayout:flowLayout];
     self.clFilm.delegate = self;
@@ -54,6 +56,7 @@
     [self pareJsonToData:data];
 }
 -(void)setcontentView:(NSString *)header nationCode:(NSString *)nationCode complete:(void (^)(NSString *))complete atIndex:(NSInteger)index{
+    self.btnViewMore.tag = index;
     self.lbTitle.tag = index;
     self.lbTitle.text = header;
     [self callWebService:nationCode];
@@ -79,10 +82,20 @@
     cell.backgroundColor = [UIColor whiteColor];
     return cell;
 }
+-(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    SearchResultItem *item = [dataArray objectAtIndex:indexPath.row];
+    [_delegate pressedItemAtIndex:item];
+}
 -(void)pressedViewMore:(UIButton *)btn{
     [self.delegate pressedViewMore:btn.tag];
 }
-
+-(void)didSelectAtPoint:(UITouch *)touch{
+    CGPoint point = [touch locationInView:self.clFilm];
+    NSIndexPath *indexPath = [self.clFilm indexPathForItemAtPoint:point];
+    if (indexPath) {
+        [self collectionView:self.clFilm didSelectItemAtIndexPath:indexPath];
+    }
+}
 #pragma mark
 -(void)callWebService:(NSString *)key{
     NSLog(@"call API");

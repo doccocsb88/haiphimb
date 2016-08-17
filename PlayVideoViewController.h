@@ -45,6 +45,7 @@
 @property (strong, nonatomic) UIButton *btnBack;
 @property (strong, nonatomic) UIButton *btnCancel;
 @property (nonatomic, strong) UIButton *rightButton;
+@property (nonatomic,assign) BOOL originSize;
 
 -(id)initWithInfo : (SearchResultItem *)info;
 - (void)callWebService;

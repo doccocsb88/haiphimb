@@ -8,6 +8,7 @@
 
 #import "TabInfoView.h"
 #import "ColorSchemeHelper.h"
+#import <SDWebImage/UIImageView+WebCache.h>
 @interface TabInfoView(){
     CGFloat thumbH ;
     CGFloat thumbW ;
@@ -168,10 +169,17 @@
     [aAttrString appendAttributedString:vAttrString];
     return aAttrString;
 }
--(void)setInfoThumbnail:(UIImage *)thumbnail{
+-(void)setInfoThumbnail:(UIImage *)thumbnail andUrl:(NSString *)imageURL{
     if (thumbnail!=nil) {
         _thumbnail.image = thumbnail;
         [_indicator stopAnimating];
+    }else{
+        [_thumbnail sd_setImageWithURL:[NSURL URLWithString:imageURL] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+            if (image) {
+//                <#statements#>
+                _thumbnail.image = image;
+            }
+        }];
     }
 }
 @end

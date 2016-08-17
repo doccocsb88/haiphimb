@@ -246,17 +246,17 @@
 -(void)initFilmData{
     filmData = [[NSMutableArray alloc] init];
     genreDatas = @[
-                   [Genre itemWithTitle:@"Hành Động" withKey:@"hanh-dong"],
-                   [Genre itemWithTitle:@"Phiêu Lưu" withKey:@"phieu-luu"],
-                   [Genre itemWithTitle:@"Tình Cảm" withKey:@"tinh-cam"],
-                   [Genre itemWithTitle:@"Tâm Lý" withKey:@"tam-ly"],
-                   [Genre itemWithTitle:@"Võ Thuật" withKey:@"vo-thuat"],
-                   [Genre itemWithTitle:@"Cổ trang" withKey:@"co-trang"],
-                   [Genre itemWithTitle:@"Hài Hước" withKey:@"hai-huoc"],
-                   [Genre itemWithTitle:@"Ca Nhạc" withKey:@"ca-nhac"],
-                   [Genre itemWithTitle:@"Hài Kịch" withKey:@"hai-kich"],
-                   [Genre itemWithTitle:@"Hình Sự" withKey:@"hinh-su"],
-                   [Genre itemWithTitle:@"Chiến Tranh " withKey:@"chien-tranh"]];
+                   [Genre itemWithTitle:@"Action Films" withKey:@"hanh-dong"],
+                   [Genre itemWithTitle:@"Adventure Films" withKey:@"phieu-luu"],
+                   [Genre itemWithTitle:@"Romance Films" withKey:@"tinh-cam"],
+                   [Genre itemWithTitle:@"Drama Films" withKey:@"tam-ly"],
+                   [Genre itemWithTitle:@"Kungfu Films" withKey:@"vo-thuat"],
+                   [Genre itemWithTitle:@"Costume Films" withKey:@"co-trang"],
+                   [Genre itemWithTitle:@"Funny Films" withKey:@"hai-huoc"],
+                   [Genre itemWithTitle:@"Musical Films" withKey:@"ca-nhac"],
+                   [Genre itemWithTitle:@"Comedy Films" withKey:@"hai-kich"],
+                   [Genre itemWithTitle:@"Crime Films" withKey:@"hinh-su"],
+                   [Genre itemWithTitle:@"War Films " withKey:@"chien-tranh"]];
     
     nationDatas = @[
                     [Genre itemWithTitle:@"Hong Kong Movies" withKey:@"hong-kong"],
@@ -319,7 +319,7 @@
 }
 -(void)initRefreshControl{
     self.refreshControl = [[UIRefreshControl alloc] init];
-    self.refreshControl.backgroundColor = [UIColor purpleColor];
+    self.refreshControl.backgroundColor = [UIColor whiteColor];
     self.refreshControl.tintColor = [UIColor whiteColor];
     self.refreshControl.tintColor = [UIColor grayColor];
     [self.refreshControl addTarget:self action:@selector(refresh:) forControlEvents:UIControlEventValueChanged];

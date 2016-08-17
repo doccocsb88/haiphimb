@@ -45,17 +45,17 @@
 
 -(void)initData{
     genreDatas = @[
-                   [Genre itemWithTitle:@"Hành Động" withKey:@"hanh-dong"],
-                   [Genre itemWithTitle:@"Phiêu Lưu" withKey:@"phieu-luu"],
-                   [Genre itemWithTitle:@"Tình Cảm" withKey:@"tinh-cam"],
-                   [Genre itemWithTitle:@"Tâm Lý" withKey:@"tam-ly"],
-                   [Genre itemWithTitle:@"Võ Thuật" withKey:@"vo-thuat"],
-                   [Genre itemWithTitle:@"Cổ trang" withKey:@"co-trang"],
-                   [Genre itemWithTitle:@"Hài Hước" withKey:@"hai-huoc"],
-                   [Genre itemWithTitle:@"Ca Nhạc" withKey:@"ca-nhac"],
-                   [Genre itemWithTitle:@"Hài Kịch" withKey:@"hai-kich"],
-                   [Genre itemWithTitle:@"Hình Sự" withKey:@"hinh-su"],
-                   [Genre itemWithTitle:@"Chiến Tranh " withKey:@"chien-tranh"]];
+                   [Genre itemWithTitle:@"Action Films" withKey:@"hanh-dong"],
+                   [Genre itemWithTitle:@"Adventure Films" withKey:@"phieu-luu"],
+                   [Genre itemWithTitle:@"Romance Films" withKey:@"tinh-cam"],
+                   [Genre itemWithTitle:@"Drama Films" withKey:@"tam-ly"],
+                   [Genre itemWithTitle:@"Kungfu Films" withKey:@"vo-thuat"],
+                   [Genre itemWithTitle:@"Costume Films" withKey:@"co-trang"],
+                   [Genre itemWithTitle:@"Funny Films" withKey:@"hai-huoc"],
+                   [Genre itemWithTitle:@"Musical Films" withKey:@"ca-nhac"],
+                   [Genre itemWithTitle:@"Comedy Films" withKey:@"hai-kich"],
+                   [Genre itemWithTitle:@"Crime Films" withKey:@"hinh-su"],
+                   [Genre itemWithTitle:@"War Films " withKey:@"chien-tranh"]];
     
     nationDatas = @[
                     [Genre itemWithTitle:@"Hong Kong Movies" withKey:@"hong-kong"],
@@ -127,7 +127,7 @@
     }
     
     // Return the number of rows in the section.
-    return 4;
+    return 5;
 }
 
 //-(UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
@@ -215,14 +215,21 @@
             [cell SetContentView:@"Sign In" image:@"icon_menu_signin.png" separate:YES];
 
         }else if(indexPath.row==1){
-            [cell SetContentView:@"History" image:@"icon_menu_history.png" separate:YES];
+           
+             [cell SetContentView:@"Home" image:@"icon_menu_home.png" separate:YES];
 
         }else if(indexPath.row==2){
-            [cell SetContentView:@"Recent Viewed" image:@"icon_menu_recent.png" separate:YES];
+            [cell SetContentView:@"Series" image:@"tabbaritem_video.png" separate:YES];
             
         }else if(indexPath.row==3){
-            [cell SetContentView:@"Home" image:@"icon_menu_home.png" separate:YES];
-
+            [cell SetContentView:@"Single"image:@"tabbaritem_movie_a.png"];
+            CALayer *bottomLine  = [[CALayer alloc] init];
+            bottomLine.frame = CGRectMake(10, HOME_MENU_HEIGHT - 1, self.view.frame.size.width - 40, 0.5);
+            bottomLine.backgroundColor = [UIColor grayColor].CGColor;
+            [cell.contentView.layer addSublayer:bottomLine];
+        }else if (indexPath.row ==4){
+           
+            [cell SetContentView:@"History" image:@"icon_menu_history.png" separate:YES];
         }
     }
     

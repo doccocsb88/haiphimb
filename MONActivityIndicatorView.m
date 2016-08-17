@@ -104,6 +104,7 @@
     self.delay = 0.2;
     self.duration = 0.8;
     self.defaultColor = [UIColor lightGrayColor];
+//    [self addCircles];
 }
 
 - (UIView *)createCircleWithRadius:(CGFloat)radius
@@ -167,6 +168,7 @@
         [self removeCircles];
         self.hidden = YES;
         self.isAnimating = NO;
+//        [self removeFromSuperview];
     }
 }
 

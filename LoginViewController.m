@@ -9,6 +9,7 @@
 #import "LoginViewController.h"
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
+#import "ColorSchemeHelper.h"
 #define kOFFSET_FOR_KEYBOARD 80.0
 
 @interface LoginViewController ()
@@ -22,14 +23,18 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self setNeedsStatusBarAppearanceUpdate];
     frame = self.view.frame;
     // Do any additional setup after loading the view.
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(loginSuccess:)
                                                  name:FBSDKAccessTokenDidChangeNotification
                                                object:nil];
+    self.view.backgroundColor = [ColorSchemeHelper sharedNationHeaderColor];
 }
-
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.

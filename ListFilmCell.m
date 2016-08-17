@@ -91,7 +91,17 @@
     _filmNameEn.textColor = [UIColor grayColor];
     [self.contentView addSubview:_filmNameEn];
      */
-        
+    if (_layoutStyle ==  LAYOUT_STYLE_VERTICAL) {
+        _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(_actualWidth - 40, 10, 35, 16)];
+        _lbSotap.text = @"a";
+        _lbSotap.textAlignment = NSTextAlignmentCenter;
+        _lbSotap.backgroundColor = [UIColor redColor];
+        _lbSotap.layer.cornerRadius = 2.0;
+        _lbSotap.layer.masksToBounds = YES;
+        _lbSotap.textColor = [UIColor whiteColor];
+        _lbSotap.font = [UIFont systemFontOfSize:10.0];
+        [self.contentView addSubview:_lbSotap];
+    }
 }
 -(void)initIndicator{
         _indicator = [[UIActivityIndicatorView alloc]
@@ -106,6 +116,7 @@
 -(void)setContentView : (SearchResultItem *)item atIndex:(NSInteger)index;
 {
     _filmNameVi.text = item.name;
+    _lbSotap.text = item.total;
     //[NSString stringWithFormat:@"lkalkdl; lajld fj ladjf %@",item.name];
     if (item.hasData==NO) {
         NSLog(@"setContentForFilmCell:: %d-%d",index,item.hasData);
@@ -128,8 +139,8 @@
                 [_indicator stopAnimating];
 //                [_indicator removeFromSuperview];
                 if (imageData) {
-                    UIImage *img  = [ImageUtils drawText:@"HAIDEPTRAI" inImage:[UIImage imageWithData:imageData] atPoint:CGPointMake(_actualWidth/2, _actualHeight/2)];
-                    _thumbnail.image = img;
+//                    UIImage *img  = [ImageUtils drawText:@"HAIDEPTRAI" inImage:[UIImage imageWithData:imageData] atPoint:CGPointMake(_actualWidth/2, _actualHeight/2)];
+                    _thumbnail.image = [UIImage imageWithData:imageData];
                 }else{
                     _thumbnail.contentMode = UIViewContentModeScaleAspectFit;
                     _thumbnail.image = [UIImage imageNamed:@"img_notfound.png"];
@@ -143,12 +154,32 @@
         });
     }else{
         _thumbnail.contentMode = UIViewContentModeScaleToFill;
-        UIImage *img  = [ImageUtils drawText:@"HAIDEPTRAI" inImage:item.thumbnail atPoint:CGPointMake(_actualWidth/2, _actualHeight/2)];
-        _thumbnail.image = img;
+//        UIImage *img  = [ImageUtils drawText:@"HAIDEPTRAI" inImage:item.thumbnail atPoint:CGPointMake(_actualWidth/2, _actualHeight/2)];
+        _thumbnail.image = item.thumbnail;
         [_indicator stopAnimating];
 
     }
 
+}
+
+-(void)setContentView:(SearchResultItem *)item atIndex:(NSInteger)index single:(BOOL)single{
+    [self setContentView:item atIndex:index];
+    if (single) {
+//        CGSize width = [item.total sizeWithFont:self.lbSotap.font
+//                                      constrainedToSize:CGSizeMake(100000, 20)
+//                                              lineBreakMode:self.lbSotap.lineBreakMode   ];
+//        
+//        float widthIs =
+//        [self.lbSotap.text
+//         boundingRectWithSize:CGSizeMake(CGRectGetWidth([[UIScreen mainScreen] bounds])/3, self.lbSotap.frame.size.height)
+//         options:NSStringDrawingUsesLineFragmentOrigin
+//         attributes:@{ NSFontAttributeName:self.lbSotap.font }
+//         context:nil]
+//        .size.width;
+//        CGRect frame = self.lbSotap.frame;
+//        self.lbSotap.frame = CGRectMake(frame.origin.x, frame.origin.y, widthIs + 10, frame.size.height);
+        self.lbSotap.hidden = single;
+    }
 }
 //-(void)setContentView:(SearchResultItem *)item{
 //    
@@ -169,5 +200,7 @@
 //    });
 //
 //
+
+
 //}
 @end

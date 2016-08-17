@@ -9,6 +9,7 @@
 #import "FilmViewCell.h"
 #import "ImageUtils.h"
 #import <UIImageView+WebCache.h>
+#import "ColorSchemeHelper.h"
 @implementation FilmViewCell
 -(void)awakeFromNib{
     [super awakeFromNib];
@@ -20,10 +21,27 @@
     [self addSubview:_indicator];
     self.thumbnail.layer.cornerRadius = 5.0;
     self.thumbnail.layer.masksToBounds = YES;
+    self.lbTitle.font = [UIFont systemFontOfSize:12.f];
+    self.lbTitle.lineBreakMode = NSLineBreakByWordWrapping;
+    self.lbTitle.numberOfLines = 0;
+    self.lbTitle.textColor = [ColorSchemeHelper sharedMovieInfoTitleColor];
+    
+//    if (_layoutStyle ==  LAYOUT_STYLE_VERTICAL) {
+        _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(self.frame.size.width - 40, 10, 35, 16)];
+        _lbSotap.text = @"a";
+        _lbSotap.textAlignment = NSTextAlignmentCenter;
+        _lbSotap.backgroundColor = [UIColor redColor];
+        _lbSotap.layer.cornerRadius = 2.0;
+        _lbSotap.layer.masksToBounds = YES;
+        _lbSotap.textColor = [UIColor whiteColor];
+        _lbSotap.font = [UIFont systemFontOfSize:10.0];
+        [self.contentView addSubview:_lbSotap];
+//    }
 }
 -(void)setContentView:(SearchResultItem *)item{
     [_indicator startAnimating];
     self.lbTitle.text = item.name;
+    self.lbSotap.text = item.total;
     [self.thumbnail setShowActivityIndicatorView:YES];
     [self.thumbnail setIndicatorStyle:UIActivityIndicatorViewStyleGray];
 //    - (void)setIndicatorStyle:(UIActivityIndicatorViewStyle)style;

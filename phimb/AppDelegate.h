@@ -7,11 +7,16 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import "PlayVideoViewController.h"
+#import "SearchResultItem.h"
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
 @property (nonatomic) BOOL allowRotation;
+@property (strong, nonatomic) PlayVideoViewController *playerViewController;
 + (UIViewController*) topMostController;
+-(BOOL)canClick;
+-(void)showPlayer:(SearchResultItem *)item inView:(UIView *)view;
+-(void)closePlayer;
 @end
 
