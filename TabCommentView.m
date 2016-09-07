@@ -11,7 +11,7 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 //#import <FB>
-#define FACEBOOK_COMMENT_URL @"https://www.giaiphapcong.vn/resources/"
+#define FACEBOOK_COMMENT_URL @"http://www.phimb.net/"
 @interface TabCommentView() <UIWebViewDelegate>
 {
     CGFloat viewWidh;

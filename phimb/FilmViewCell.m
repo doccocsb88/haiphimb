@@ -10,6 +10,7 @@
 #import "ImageUtils.h"
 #import <UIImageView+WebCache.h>
 #import "ColorSchemeHelper.h"
+#import "UIDevice-Hardware.h"
 @implementation FilmViewCell
 -(void)awakeFromNib{
     [super awakeFromNib];
@@ -27,15 +28,27 @@
     self.lbTitle.textColor = [ColorSchemeHelper sharedMovieInfoTitleColor];
     
 //    if (_layoutStyle ==  LAYOUT_STYLE_VERTICAL) {
-        _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(self.frame.size.width - 40, 10, 35, 16)];
-        _lbSotap.text = @"a";
-        _lbSotap.textAlignment = NSTextAlignmentCenter;
-        _lbSotap.backgroundColor = [UIColor redColor];
-        _lbSotap.layer.cornerRadius = 2.0;
-        _lbSotap.layer.masksToBounds = YES;
-        _lbSotap.textColor = [UIColor whiteColor];
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    CGFloat viewWidth = CGRectGetWidth([[UIScreen mainScreen] bounds])/3 - 10;
+    if ([deviceString containsString:@"iPad"]) {
+        viewWidth = CGRectGetWidth([[UIScreen mainScreen] bounds])/5 - 10;
+        _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(viewWidth - 55, 10, 50, 25)];
+        _lbSotap.font = [UIFont systemFontOfSize:15.0];
+        
+    }else{
+        viewWidth = CGRectGetWidth([[UIScreen mainScreen] bounds])/3 - 10;
+        _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(viewWidth - 40, 10, 35, 16)];
         _lbSotap.font = [UIFont systemFontOfSize:10.0];
-        [self.contentView addSubview:_lbSotap];
+        
+    }
+    
+    _lbSotap.text = @"a";
+    _lbSotap.textAlignment = NSTextAlignmentCenter;
+    _lbSotap.backgroundColor = [UIColor redColor];
+    _lbSotap.layer.cornerRadius = 2.0;
+    _lbSotap.layer.masksToBounds = YES;
+    _lbSotap.textColor = [UIColor whiteColor];
+    [self.contentView addSubview:_lbSotap];
 //    }
 }
 -(void)setContentView:(SearchResultItem *)item{

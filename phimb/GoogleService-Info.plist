@@ -7,34 +7,34 @@
 	<key>AD_UNIT_ID_FOR_INTERSTITIAL_TEST</key>
 	<string>ca-app-pub-3940256099942544/4411468910</string>
 	<key>CLIENT_ID</key>
-	<string>590625650976-97a906cuqinrjkeq9ucmn8s1atrc6j4s.apps.googleusercontent.com</string>
+	<string>587279542683-unhgssgthrkshk0spb5d82ui5osv9ph9.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.590625650976-97a906cuqinrjkeq9ucmn8s1atrc6j4s</string>
+	<string>com.googleusercontent.apps.587279542683-unhgssgthrkshk0spb5d82ui5osv9ph9</string>
 	<key>API_KEY</key>
-	<string>AIzaSyBRyQY-0ghIzEIVKWl-ZXqnO8aMppH_XjA</string>
+	<string>AIzaSyBwVm2hKQdEHmJQv15j0VxqnoKX0z6iVUU</string>
 	<key>GCM_SENDER_ID</key>
-	<string>590625650976</string>
+	<string>587279542683</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.phimbnet.phimbz</string>
+	<string>com.phimbnet.phimb</string>
 	<key>PROJECT_ID</key>
-	<string>phimb-a7473</string>
+	<string>admob-app-id-3809937027</string>
 	<key>STORAGE_BUCKET</key>
-	<string>phimb-a7473.appspot.com</string>
+	<string>admob-app-id-3809937027.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<true/>
 	<key>IS_ANALYTICS_ENABLED</key>
 	<false/>
 	<key>IS_APPINVITE_ENABLED</key>
-	<false/>
+	<true/>
 	<key>IS_GCM_ENABLED</key>
 	<true/>
 	<key>IS_SIGNIN_ENABLED</key>
 	<true/>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:590625650976:ios:d499b3178a8279ce</string>
+	<string>1:587279542683:ios:9be4b7397e788897</string>
 	<key>DATABASE_URL</key>
-	<string>https://phimb-a7473.firebaseio.com</string>
+	<string>https://admob-app-id-3809937027.firebaseio.com</string>
 </dict>
 </plist>

@@ -10,6 +10,7 @@
 #import "PhimbAPI.h"
 #import "ColorSchemeHelper.h"
 #import "FilmViewCell.h"
+#import "UIDevice-Hardware.h"
 @interface NationViewCell() <UICollectionViewDataSource,UICollectionViewDelegate,NSURLConnectionDataDelegate>
 {
     NSMutableArray *dataArray;
@@ -26,6 +27,14 @@
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
     flowLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
     CGFloat itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /3 - 30/3;
+
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+         itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /8 - 10;
+        
+    }else{
+        itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /3 -10;
+    }
 //     boxW = self.actualWidth / 3 - 30/3;
     [flowLayout setItemSize:CGSizeMake(itemSize  , itemSize*3/2 + 40)];
     [flowLayout setScrollDirection:UICollectionViewScrollDirectionHorizontal];

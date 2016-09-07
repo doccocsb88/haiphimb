@@ -27,5 +27,6 @@
 @property (nonatomic,strong) UIButton *homeMenu;
 @property (nonatomic,strong) UILabel *homeTitle;
 @property (nonatomic) CGFloat sliderHeight;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *topMargin;
 @property (weak, nonatomic) IBOutlet UICollectionView *filmCollectionView;
 @end

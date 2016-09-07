@@ -47,6 +47,10 @@
 -(void)setupViews{
     UICollectionViewFlowLayout *flow = [[UICollectionViewFlowLayout alloc] init];
     CGFloat itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /3 - 10;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        itemSize = CGRectGetWidth([UIScreen mainScreen].bounds) /8 - 10;
+    }
     flow.itemSize = CGSizeMake(itemSize, itemSize *3/2 + 40);
     flow.scrollDirection = UICollectionViewScrollDirectionVertical;
     flow.sectionInset = UIEdgeInsetsMake(5, 5, 5, 5);

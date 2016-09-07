@@ -74,16 +74,16 @@
 }
 -(void)viewWillLayoutSubviews{
     [super viewWillLayoutSubviews];
-    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
-        // portrait
-        panelWidth = PANEL_WIDTH;
-        
-    } else {
-        // landscape
-        panelWidth = self.view.frame.size.width - (self.view.frame.size.height - 60);
-        
-    }
+//    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+//    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+//        // portrait
+//        panelWidth = PANEL_WIDTH;
+//        
+//    } else {
+//        // landscape
+//        panelWidth = self.view.frame.size.width - (self.view.frame.size.height - 60);
+//        
+//    }
 }
 #pragma mark -
 #pragma mark View Will/Did Appear

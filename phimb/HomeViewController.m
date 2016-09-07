@@ -12,6 +12,8 @@
 #import "UIDevice-Hardware.h"
 #import "UserDataViewController.h"
 #import "GuideHomeView.h"
+//#import <GoogleMobileAds/GoogleMobileAds.h>
+#import "AppDelegate.h"
 #define CENTER_TAG 1
 #define LEFT_PANEL_TAG 2
 //#define RIGHT_PANEL_TAG 3
@@ -32,7 +34,7 @@
 @property (nonatomic, assign) BOOL showPanel;
 @property (nonatomic, strong) GuideHomeView *guideView;
 @property (nonatomic, assign) CGPoint preVelocity;
-
+//@property (strong, nonatomic) GADBannerView *bannerView;
 @end
 
 @implementation HomeViewController
@@ -50,7 +52,8 @@
     }
     [self setupViews];
     [self setupGestures];
-//    UserDataViewController *vc = [[UserDataViewController alloc] init];
+    [((AppDelegate *)[[UIApplication sharedApplication] delegate]) showAddBanner:self];
+    //    UserDataViewController *vc = [[UserDataViewController alloc] init];
 }
 -(UIStatusBarStyle)preferredStatusBarStyle{
     return UIStatusBarStyleLightContent;
@@ -58,6 +61,12 @@
 -(void)viewWillAppear:(BOOL)animated{
     [super viewWillAppear:animated];
     [self.view bringSubviewToFront:self.guideView];
+//    self.bannerView.hidden = NO;
+
+}
+-(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+//    self.bannerView.hidden = YES;
 }
 
 - (void)didReceiveMemoryWarning {

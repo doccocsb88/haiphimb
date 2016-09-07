@@ -474,6 +474,7 @@
                     <connections>
                         <outlet property="bgHeader" destination="wVc-BE-HL0" id="HwM-XB-Oli"/>
                         <outlet property="filmCollectionView" destination="41x-hJ-TdC" id="3ow-Kj-5fq"/>
+                        <outlet property="topMargin" destination="J3p-c6-fSf" id="gXx-CL-Blk"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="MKZ-rX-GUO" userLabel="First Responder" sceneMemberID="firstResponder"/>

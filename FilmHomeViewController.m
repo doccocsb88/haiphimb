@@ -18,7 +18,11 @@
 #import "MainViewController.h"
 #import "AppDelegate.h"
 #import <RealReachability.h>
-@interface FilmHomeViewController () <UICollectionViewDelegate, UICollectionViewDataSource>
+#import <SDWebImage/UIImageView+WebCache.h>
+#import <iCarousel/iCarousel.h>
+#define numberOfPages  10
+
+@interface FilmHomeViewController () <UICollectionViewDelegate, UICollectionViewDataSource,iCarouselDataSource,iCarouselDelegate>
 {
 //    NSArray *paramData;
     CGFloat marginTop;
@@ -38,6 +42,9 @@
 @property (weak, nonatomic) IBOutlet UIView *bgHeader;
 @property (nonatomic,strong) UserDataViewController *historyView;
 @property (strong, nonatomic) UIActivityIndicatorView *activityIndicator;
+//@property (strong, nonatomic) UIScrollView *sliderFilm;
+//@property (strong, nonatomic) UIPageControl *pageControl;
+@property (strong, nonatomic) iCarousel *slideShow;
 //@property (strong,nonatomic) UIButton *btnTabMostView;
 //@property (strong,nonatomic) UIButton *btnTabNew;
 //@property (strong,nonatomic) UIButton *btnTabSet;
@@ -55,11 +62,55 @@
     //SearchViewController *vc = [[SearchViewController alloc] init];
     // [SlideNavigationController sharedInstance].rightMenu = vc;
     /**/
-    _sliderHeight =0;//(self.view.frame.size.height - 64)/4;
+   //(self.view.frame.size.height - 64)/4;
     viewSize =[[UIScreen mainScreen] bounds].size;
     tabIndex = 0;
     marginTop = 64;
-    boxW = viewSize.width/3 - 10;
+    paramPage = 1;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        boxW = viewSize.width/8 - 10;
+         _sliderHeight = CGRectGetHeight([[UIScreen mainScreen] bounds])/3;
+
+//        self.sliderFilm = [[UIScrollView alloc] initWithFrame:CGRectMake(0, marginTop, self.view.frame.size.width, _sliderHeight)];
+//        self.sliderFilm.contentSize = CGSizeMake(self.view.frame.size.width * numberOfPages, _sliderHeight);
+//        self.sliderFilm.pagingEnabled = YES;
+//        self.sliderFilm.delegate = self;
+//        self.sliderFilm.showsHorizontalScrollIndicator = NO;
+//        self.sliderFilm.showsVerticalScrollIndicator = NO;
+//        [self.view addSubview:self.sliderFilm];
+        
+//        for (int i = 0; i < numberOfPages; i++) {
+//            UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(self.view.frame.size.width * i, 0, self.view.frame.size.width, _sliderHeight)];
+//            imageView.contentMode = UIViewContentModeScaleAspectFill;
+//            imageView.clipsToBounds = YES;
+//            imageView.tag = 100 + i;
+//            imageView.backgroundColor = [UIColor redColor];
+//            [self.sliderFilm addSubview:imageView];
+//        }
+//        
+//        self.pageControl = [[UIPageControl alloc] initWithFrame:CGRectMake(self.view.frame.size.width/2 - 50, _sliderHeight, 100, 50)];
+//        self.pageControl.numberOfPages = numberOfPages;
+//        [self.pageControl setCurrentPageIndicatorTintColor:[ColorSchemeHelper sharedGenreHeaderColor]];
+//        [self.pageControl setPageIndicatorTintColor:[[UIColor whiteColor] colorWithAlphaComponent:0.8]];
+////        self.pageControl.backgroundColor = [UIColor yellowColor];
+//        self.pageControl.transform = CGAffineTransformMakeScale(2.0, 2.0);
+//
+//        [self.view addSubview:self.pageControl];
+        
+        self.slideShow = [[iCarousel alloc] initWithFrame:CGRectMake(0, marginTop, self.view.frame.size.width, _sliderHeight)];
+        self.slideShow.delegate = self;
+        self.slideShow.dataSource = self;
+        self.slideShow.currentItemIndex = numberOfPages/2;
+        self.slideShow.type = iCarouselTypeCoverFlow2;
+        self.slideShow.clipsToBounds = YES;
+        self.slideShow.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.8];
+        
+        [self.view addSubview:self.slideShow];
+    }else{
+        boxW = viewSize.width/3 - 10;
+         _sliderHeight =0;
+    }
     //    tabHeight = 30;
     [self initDatas];
     [self initViews];
@@ -99,7 +150,8 @@
 }
 #pragma mark - Rotation
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation {
-    return (toInterfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
+//    return (toInterfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
+    return UIInterfaceOrientationPortrait;
 }
 #pragma mark - SlideNavigationController Methods -
 
@@ -127,10 +179,12 @@
     [self initTableFilmCollection];
     [self initTabs];
     _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    _activityIndicator.frame = CGRectMake(0, 0, 50, 50);
     _activityIndicator.center = self.view.center;
+//    _activityIndicator.backgroundColor = [UIColor redColor];
     _activityIndicator.hidesWhenStopped = YES;
     [self.view addSubview:_activityIndicator];
-    [_activityIndicator stopAnimating];
+    [_activityIndicator startAnimating];
 
 }
 -(void)initTabs{
@@ -209,10 +263,15 @@
     flowLayout.itemSize = CGSizeMake(boxW, boxW *3/2 + 40);
     flowLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
     flowLayout.sectionInset = UIEdgeInsetsMake(5, 5, 5, 5);
-    
+   
     self.filmCollectionView.collectionViewLayout = flowLayout;
     [self.filmCollectionView registerClass:[ListFilmCell class] forCellWithReuseIdentifier:@"cvCell"];
     self.filmCollectionView.backgroundColor = [UIColor whiteColor];
+    if (_sliderHeight > 0) {
+        self.topMargin.constant = _sliderHeight;
+        [self.view layoutIfNeeded];
+    }
+  
 }
 - (void)setupScrollView:(UIScrollView*)scrMain {
     // we have 10 images here.
@@ -363,7 +422,57 @@
  // Pass the selected object to the new view controller.
  }
  */
+#pragma mark-
+#pragma mark - iCa
+- (NSInteger)numberOfItemsInCarousel:(iCarousel *)carousel{
+    return dataArray.count>10?20:10;
+}
+- (UIView *)carousel:(iCarousel *)carousel viewForItemAtIndex:(NSInteger)index reusingView:(nullable UIView *)view{
+    
+    CGFloat imageWidh = _sliderHeight;
+    UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(self.view.frame.size.width/2 - imageWidh/2, 0, imageWidh, _sliderHeight)];
+    imageView.contentMode = UIViewContentModeScaleAspectFill;
+    imageView.clipsToBounds= YES;
+    imageView.backgroundColor = [UIColor whiteColor];
+    if (index < dataArray.count) {
+        SearchResultItem *item = [dataArray objectAtIndex:index];
+        
+        [imageView sd_setImageWithURL:[NSURL URLWithString:item.img] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+            if (imageView) {
+                imageView.image = image;
+            }
+        }];
 
+    }else{
+        imageView.image = [UIImage imageNamed:@"img_notfound.png"];
+    }
+//    UILabel *lbTest = [[UILabel alloc] initWithFrame:imageView.bounds];
+//    lbTest.text = @"Hai TEST ";
+//    lbTest.textAlignment = NSTextAlignmentCenter;
+//    lbTest.textColor = [UIColor yellowColor];
+//    lbTest.font = [UIFont systemFontOfSize:30.0];
+//    [imageView addSubview:lbTest];
+    return imageView;
+}
+- (void)carousel:(iCarousel *)carousel didSelectItemAtIndex:(NSInteger)index{
+    if (index < dataArray.count) {
+        SearchResultItem *item = [dataArray objectAtIndex:index];
+        if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
+            [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
+        }
+        if ([self respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)])
+        {
+            [self prefersStatusBarHidden];
+            [self performSelector:@selector(setNeedsStatusBarAppearanceUpdate)];
+        }
+        else
+        {
+            // iOS 6
+            [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationSlide];
+        }
+    }
+
+}
 -(void)presentPlayMovieController:(SearchResultItem *)item{
     if ( [((AppDelegate *)[[UIApplication sharedApplication]delegate]) canClick]) {
     [((AppDelegate *)[[UIApplication sharedApplication]delegate]) showPlayer:item inView:self.view];
@@ -654,12 +763,26 @@
                                 [dataArray addObject:[arrs objectAtIndex:i] ];
                                 NSIndexPath *indexPath  = [NSIndexPath indexPathForRow:dataArray.count-1 inSection:0];
                                 NSLog(@"insertRowAtIndex : %d",indexPath.row);
-                                
+//                                if (paramPage == 1) {
+//                                    if (self.sliderFilm) {
+//                                         SearchResultItem *item= [arrs objectAtIndex:i];
+//                                        UIImageView *imageView = [self.sliderFilm viewWithTag:100+i];
+//                                        if (imageView) {
+//                                            [imageView sd_setImageWithURL:[NSURL URLWithString:item.img] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+//                                                if (image) {
+//                                                    imageView.image = image;
+//                                                }
+//                                            }];
+//                                        }
+//                                    }
+//                                }
                                 [self.filmCollectionView insertItemsAtIndexPaths:@[indexPath]];
                             } completion:^(BOOL finished){
                                 //[_listFilm reloadData];
                             }];
                         }
+                        self.slideShow.currentItemIndex = dataArray.count >10?10:5;
+                        [self.slideShow reloadData];
                         [_activityIndicator stopAnimating];
                     });
                 });
@@ -670,5 +793,21 @@
     
     
 }
+#pragma mark
+#pragma mark-ScrollViewDelegate
 
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    NSLog(@"scroll");
+    static NSInteger previousPage = 0;
+    CGFloat pageWidth = scrollView.frame.size.width;
+    float fractionalPage = scrollView.contentOffset.x / pageWidth;
+    NSInteger page = lround(fractionalPage);
+    if (previousPage != page) {
+        // Page has changed, do your thing!
+        // ...
+        // Finally, update previous page
+        previousPage = page;
+//        self.pageControl.currentPage = page;
+    }
+}
 @end

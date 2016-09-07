@@ -31,9 +31,7 @@
 
 //
 
-@property (strong, nonatomic) UIButton *nextButton;
-@property (strong, nonatomic) UIButton *prevButton;
-@property (strong, nonatomic) UIButton *btnExpand;
+
 //
 @property (strong, nonatomic) MPVolumeView *volumeView;
 @property (strong, nonatomic) UISlider *volume;
@@ -63,7 +61,7 @@
 
 @implementation GUIPlayerView
 
-@synthesize player, playerLayer, currentItem;
+@synthesize player, playerLayer, currentItem, isReady;
 @synthesize controllersView, controllersFullScreenView, airPlayLabel;
 @synthesize playButton, fplayButton, fullscreenButton, volumeView, normalSlider, currentTimeLabel, remainingTimeLabel, /*liveLabel,*/ spacerView, btnExpand;
 @synthesize  progressTimer,fullScreenProgressTimer, controllersTimer, seeking, fseeking, fullscreen, defaultFrame;
@@ -90,6 +88,13 @@
 
 - (void)setup {
     isInit = NO;
+    isReady = NO;
+    self.originsize = YES;
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(volumeChangedz:)
+     name:@"AVSystemController_SystemVolumeDidChangeNotification"
+     object:nil];
     // Set up notification observers
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerDidFinishPlaying:)
                                                  name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
@@ -212,6 +217,8 @@
     btnExpand = [UIButton new];
     [btnExpand setTranslatesAutoresizingMaskIntoConstraints:NO];
     [btnExpand setImage:[UIImage imageNamed:@"ic_expand_more_white"] forState:UIControlStateNormal];
+    [btnExpand setImage:[UIImage imageNamed:@"ic_expand_less_white"] forState:UIControlStateSelected];
+    
     btnExpand.imageView.contentMode = UIViewContentModeScaleAspectFit;
     btnExpand.imageEdgeInsets = UIEdgeInsetsMake(0, 5, 5, 5);
     [btnExpand addTarget:self action:@selector(pressedExpand:) forControlEvents:UIControlEventTouchUpInside];
@@ -386,6 +393,11 @@
     [volume setTranslatesAutoresizingMaskIntoConstraints:NO];
     [volume setContinuous:YES];
     volume.minimumValue = 0.0;
+//    [UIView animateWithDuration:0.2 animations:^{
+//        [volume setValue:50.0 animated:YES];
+//
+//    }];
+    
     volume.maximumValue = 100;
     [volume setTintColor:[UIColor redColor]];
     [volume addTarget:self action:@selector(volumeChanged:) forControlEvents:UIControlEventValueChanged];
@@ -605,7 +617,10 @@
         [delegate playerWillEnterFullscreen];
     }
     self.rotating = YES;
+    float vol = [[AVAudioSession sharedInstance] outputVolume];
 
+    volume.value = vol * 100;
+    
     [UIView animateWithDuration:duration animations:^{
         if (self.angle == 0) {
             [self setFrame:frame];
@@ -732,12 +747,15 @@
     self.queueRotate = UIDeviceOrientationUnknown;
 }
 - (void)seek:(UISlider *)slider {
-    [self pause];
-    int timescale = currentItem.asset.duration.timescale;
-    float time = slider.value * (currentItem.asset.duration.value / timescale);
-    [player seekToTime:CMTimeMakeWithSeconds(time, timescale)];
-    
-    [self showControllers];
+    if (isReady) {
+        [self pause];
+        int timescale = currentItem.asset.duration.timescale;
+        float time = slider.value * (currentItem.asset.duration.value / timescale);
+        [player seekToTime:CMTimeMakeWithSeconds(time, timescale)];
+        
+        [self showControllers];
+    }
+   
 }
 
 - (void)pauseRefreshing {
@@ -750,12 +768,13 @@
     [self play];
 }
 - (void)fseek:(UISlider *)slider {
-    [self pause];
-    int timescale = currentItem.asset.duration.timescale;
-    float time = slider.value * (currentItem.asset.duration.value / timescale);
-    [player seekToTime:CMTimeMakeWithSeconds(time, timescale)];
-    
-    [self showControllers];
+    if (isReady) {
+        [self pause];
+        int timescale = currentItem.asset.duration.timescale;
+        float time = slider.value * (currentItem.asset.duration.value / timescale);
+        [player seekToTime:CMTimeMakeWithSeconds(time, timescale)];
+        [self showControllers];
+    }
 }
 
 - (void)fpauseRefreshing {
@@ -849,9 +868,10 @@
 }
 
 - (void)showControllers {
+    [btnExpand setAlpha:1.0];
+
     if(_hasController){
     [UIView animateWithDuration:0.2f animations:^{
-        [btnExpand setAlpha:1.0];
         [controllersView setAlpha:1.0f];
         [controllersFullScreenView setAlpha:1.0f];
     } completion:^(BOOL finished) {
@@ -882,9 +902,9 @@
     if (player) {
         [self stop];
     }
-   
+    isReady = NO;
     player = [[AVPlayer alloc] initWithPlayerItem:nil];
-    
+    player.volume = 0.5;
     AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:videoURL options:nil];
     NSArray *keys = [NSArray arrayWithObject:@"playable"];
     
@@ -930,7 +950,14 @@
     [self.layer addSublayer:playerLayer];
     isInit = YES;
     if(fullscreen){
-        [playerLayer setFrame:CGRectMake(0, 0, CGRectGetHeight([[UIScreen mainScreen] bounds]), CGRectGetWidth([[UIScreen mainScreen] bounds]))];
+//        [UIView animateWithDuration:0.1 animations:^{
+//             [playerLayer setFrame:CGRectMake(0, 0, CGRectGetHeight([[UIScreen mainScreen] bounds]), CGRectGetWidth([[UIScreen mainScreen] bounds]))];
+//        } completion:^(BOOL finished) {
+            [self changeViewToLandcape];
+//        }];
+       
+        
+//        self.layer.backgroundColor = [UIColor redColor].CGColor;
 
     }else{
         defaultFrame = self.frame;
@@ -1027,6 +1054,15 @@
 //        [self.currentItem removeObserver:self forKeyPath:@"status"];
         [self.player removeObserver:self forKeyPath:@"rate"];
         [playerLayer removeFromSuperlayer];
+        
+    }
+    //
+    if (normalSlider) {
+        normalSlider.value = 0;
+    }
+    if (fullScreenSlider) {
+        fullScreenSlider.value = 0;
+
     }
 }
 
@@ -1122,6 +1158,7 @@
         CGFloat rate = [player rate];
         if (rate > 0) {
 //            [movieIndicator stopAnimating];
+            isReady = YES;
             if ([delegate respondsToSelector:@selector(playerDidPlaying)]) {
                 [delegate playerDidPlaying];
             }
@@ -1151,10 +1188,24 @@
     }
 
 }
+- (void)volumeChangedz:(NSNotification *)notification
+{
+    float vol=
+    [[[notification userInfo]
+      objectForKey:@"AVSystemController_AudioVolumeNotificationParameter"]
+     floatValue];
+    [volume setValue:vol * 100 animated:YES];
+    // Do stuff with volume
+}
 -(void)updatePlayerLayer{
-    CGRect frame = self.frame;
-    frame.origin = CGPointZero;
-    playerLayer.frame = frame;
+
+    if (fullscreen) {
+        playerLayer.frame = CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.height, [[UIScreen mainScreen] bounds].size.width);
+    }else{
+        CGRect frame = self.frame;
+        frame.origin = CGPointZero;
+        playerLayer.frame = frame;
+    }
     [self layoutIfNeeded];
 }
 - (UIColor *)activityIndicatorView:(MONActivityIndicatorView *)activityIndicatorView
@@ -1168,7 +1219,14 @@
 #pragma mark - Button Actions
 
 -(void)pressedExpand:(UIButton *)sender{
-    [delegate playerDidExpandLess];
+    if (self.originsize) {
+//        btnExpand.selected = YES;
+//        btnExpand.backgroundColor = [UIColor redColor];
+        [delegate playerDidExpandLess];
+    }else{
+//        btnExpand.selected = NO;
+        [delegate playerDidExpandMore];
+    }
 }
 
 -(void)pressedNext:(UIButton *)sender{

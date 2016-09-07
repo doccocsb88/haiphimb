@@ -162,7 +162,8 @@
 		4BF5BB591D040C6500DFD1C6 /* ic_fullscreen_exit@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 4BF5BB561D040C6500DFD1C6 /* ic_fullscreen_exit@2x.png */; };
 		4BF5BB5A1D040C6500DFD1C6 /* ic_fullscreen_exit@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 4BF5BB571D040C6500DFD1C6 /* ic_fullscreen_exit@3x.png */; };
 		D41CB3D812B1543F23F8E3D2 /* libPods-phimb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DAE3B8ED0B6EF2B3447AE02 /* libPods-phimb.a */; };
-		FA9ED50E1D63540C00F50BC2 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA9ED50D1D63540C00F50BC2 /* GoogleService-Info.plist */; };
+		FA4281441D64C06300328314 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA4281431D64C06300328314 /* GoogleService-Info.plist */; };
+		FA79CAF61D68B8FB001203F5 /* ic_expand_less_white.png in Resources */ = {isa = PBXBuildFile; fileRef = FA79CAF51D68B8FB001203F5 /* ic_expand_less_white.png */; };
 		FA9F7C011D4F288A00B9285B /* Pref.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9F7C001D4F288A00B9285B /* Pref.m */; };
 		FA9F7C041D4F290300B9285B /* GuidePlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9F7C031D4F290300B9285B /* GuidePlayerView.m */; };
 		FA9F7C071D4F2F7500B9285B /* SplashViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9F7C061D4F2F7500B9285B /* SplashViewController.m */; };
@@ -410,7 +411,8 @@
 		ADFE5329112C9DA47F875CDF /* Pods-phimb.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-phimb.release.xcconfig"; path = "Pods/Target Support Files/Pods-phimb/Pods-phimb.release.xcconfig"; sourceTree = "<group>"; };
 		BE0800A55AE56589BF0494E2 /* Pods-phimbTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-phimbTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-phimbTests/Pods-phimbTests.debug.xcconfig"; sourceTree = "<group>"; };
 		F5B8A54657860618196632D7 /* Pods-phimbTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-phimbTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-phimbTests/Pods-phimbTests.release.xcconfig"; sourceTree = "<group>"; };
-		FA9ED50D1D63540C00F50BC2 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		FA4281431D64C06300328314 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		FA79CAF51D68B8FB001203F5 /* ic_expand_less_white.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_expand_less_white.png; sourceTree = "<group>"; };
 		FA9F7BFF1D4F288A00B9285B /* Pref.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Pref.h; sourceTree = "<group>"; };
 		FA9F7C001D4F288A00B9285B /* Pref.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Pref.m; sourceTree = "<group>"; };
 		FA9F7C021D4F290300B9285B /* GuidePlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GuidePlayerView.h; sourceTree = "<group>"; };
@@ -510,6 +512,7 @@
 				1840148F1B213809002EDBE4 /* Main.storyboard */,
 				184014921B213809002EDBE4 /* Images.xcassets */,
 				184014941B213809002EDBE4 /* LaunchScreen.xib */,
+				FA4281431D64C06300328314 /* GoogleService-Info.plist */,
 				184014851B213809002EDBE4 /* Supporting Files */,
 			);
 			path = phimb;
@@ -518,7 +521,6 @@
 		184014851B213809002EDBE4 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				FA9ED50D1D63540C00F50BC2 /* GoogleService-Info.plist */,
 				184014861B213809002EDBE4 /* Info.plist */,
 				184014871B213809002EDBE4 /* main.m */,
 			);
@@ -545,6 +547,7 @@
 		184014AB1B21396B002EDBE4 /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				FA79CAF51D68B8FB001203F5 /* ic_expand_less_white.png */,
 				FA9F7C171D4F3F5400B9285B /* ic_left.png */,
 				FA9F7C181D4F3F5400B9285B /* ic_right.png */,
 				FA9F7C0F1D4F37F700B9285B /* filmb_splash.png */,
@@ -1040,7 +1043,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				184014BE1B21399D002EDBE4 /* icon_play.png in Resources */,
-				FA9ED50E1D63540C00F50BC2 /* GoogleService-Info.plist in Resources */,
+				FA79CAF61D68B8FB001203F5 /* ic_expand_less_white.png in Resources */,
 				18ED0E191B2934C900189036 /* UserDataCell.xib in Resources */,
 				18562D181B229B4B00FA89FF /* EpisodeCell.xib in Resources */,
 				184014C01B21399D002EDBE4 /* filmthumbnail.jpg in Resources */,
@@ -1068,6 +1071,7 @@
 				4BB992311D0AA402000F5B95 /* ic_previous@3x.png in Resources */,
 				184015931B21CB7A002EDBE4 /* img_login.png in Resources */,
 				FA9F7C101D4F37F700B9285B /* filmb_splash.png in Resources */,
+				FA4281441D64C06300328314 /* GoogleService-Info.plist in Resources */,
 				184014B91B21399D002EDBE4 /* tabbaritem_nation@2x.png in Resources */,
 				184015351B213CD7002EDBE4 /* bg_panelLeft@2x.png in Resources */,
 				184015331B213CD7002EDBE4 /* attribution.txt in Resources */,
@@ -1438,7 +1442,7 @@
 				);
 				INFOPLIST_FILE = phimb/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.phimbnet.phimbz;
+				PRODUCT_BUNDLE_IDENTIFIER = com.phimbnet.phimb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 			};
@@ -1458,7 +1462,7 @@
 				);
 				INFOPLIST_FILE = phimb/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.phimbnet.phimbz;
+				PRODUCT_BUNDLE_IDENTIFIER = com.phimbnet.phimb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 			};

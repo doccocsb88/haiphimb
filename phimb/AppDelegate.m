@@ -22,7 +22,13 @@
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    self.allowRotation = YES;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+        
+    }else{
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+    }
     // Override point for customization after application launch.
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayerWillEnterFullscreenNotification:) name:MPMoviePlayerWillEnterFullscreenNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayerWillExitFullscreenNotification:) name:MPMoviePlayerWillExitFullscreenNotification object:nil];
@@ -81,21 +87,41 @@
    
     NSLog(@"rotation");
     if ([self.window.rootViewController.presentedViewController isKindOfClass:[PlayVideoViewController class]]){
-        return UIInterfaceOrientationMaskPortrait;
-
+        NSString *deviceString =[[UIDevice currentDevice] platformString];
+        if ([deviceString containsString:@"iPad"]) {
+            return UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
+            
+        }else{
+            return UIInterfaceOrientationMaskPortrait;
+        }
     }else{
-        if (self.allowRotation && NO) {
-            return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
+        if (self.allowRotation) {
+            return UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
         }
     }
     return UIInterfaceOrientationMaskPortrait;
 
 }
 - (void) moviePlayerWillEnterFullscreenNotification:(NSNotification*)notification {
-    self.allowRotation = YES;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+        
+    }else{
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+    }
+//    self.allowRotation = NO;
 }
 - (void) moviePlayerWillExitFullscreenNotification:(NSNotification*)notification {
-    self.allowRotation = YES;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+        
+    }else{
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+    }
+    //    self.allowRotation = NO;
+
 }
 
 + (UIViewController*) topMostController
@@ -118,6 +144,24 @@
                                                 sourceApplication:sourceApplication
                                                        annotation:annotation];
 }
+-(void)showAddBanner:(UIViewController *)controller{
+    self.bannerView = [[GADBannerView alloc] initWithAdSize:GADAdSizeFromCGSize(CGSizeMake(320, 50))];
+    self.bannerView.frame = CGRectMake(0, CGRectGetHeight([[UIScreen mainScreen] bounds]) - 100, CGRectGetWidth([[UIScreen mainScreen] bounds]), 50);
+    self.bannerView.adUnitID = @"ca-app-pub-1737618998941554/9716869826";
+    self.bannerView.rootViewController = controller;
+    
+    GADRequest *request = [GADRequest request];
+    // Requests test ads on devices you specify. Your test device ID is printed to the console when
+    // an ad request is made. GADBannerView automatically returns test ads when running on a
+    // simulator.
+    request.testDevices = @[
+                            @"31d3e2f86e101c729ad91ba5134da532133c490c"  // Eric's iPod Touch
+                            ];
+    [self.bannerView loadRequest:request];
+    //    [self.view addSubview:self.bannerView];
+    [self.window addSubview:self.bannerView];
+
+}
 -(BOOL)canClick{
 //    if (self.playerViewController) {
 //        if (self.playerViewController.originSize) {
@@ -129,7 +173,9 @@
 }
 -(void)showPlayer:(SearchResultItem *)item inView:(UIView *)view{
     [[UIApplication sharedApplication] setStatusBarHidden:YES];
-
+    if (self.bannerView) {
+        self.bannerView.hidden = YES;
+    }
     if (self.playerViewController) {
         
         [self.playerViewController prepareFilmData:item];
@@ -160,6 +206,8 @@
     [self.playerViewController.view removeFromSuperview];
     self.playerViewController = nil;
     [[UIApplication sharedApplication] setStatusBarHidden:NO];
-
+    if (self.bannerView) {
+        self.bannerView.hidden = NO;
+    }
 }
 @end

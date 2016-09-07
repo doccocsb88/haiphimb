@@ -91,6 +91,7 @@
     _tbServes.dataSource = self;
     [_tbServes registerClass:[UITableViewCell class] forCellReuseIdentifier:@"tapphimcell"];
     _tbServes.alwaysBounceVertical = YES;
+    _tbServes.scrollEnabled  = NO;
     _tbServes.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     _tbServes.separatorStyle = UITableViewRowActionStyleDefault;
     _lbServer1 = [[UILabel alloc] initWithFrame:CGRectMake(5, 5, 60, 40)];

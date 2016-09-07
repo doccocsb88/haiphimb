@@ -41,7 +41,7 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
 @property (weak, nonatomic)  IBOutlet UITableView *tbFilm;
 @property (nonatomic,strong) UIRefreshControl *refreshControl;
 @property (nonatomic,strong) UIActivityIndicatorView *indicator;
-@property (nonatomic,strong)     UILabel *lbTitleView ;
+@property (nonatomic,strong) UILabel *lbTitleView ;
 @property (nonatomic,strong) Genre *genre;
 @property (nonatomic, strong) NSMutableArray *imagesArray;
 @property (nonatomic ,strong) NSString *urlAPI;
@@ -474,15 +474,23 @@ const NSString *API_URL_NATION_FILMz = @"http://www.phimb.net/api/list/538c7f456
         
     }
     viewSize = self.view.frame.size;
-    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
-        // portrait
-        boxW =self.view.frame.size.width/NUMBER_COLUMN-30/NUMBER_COLUMN;
-
-    } else {
-        boxW =self.view.frame.size.height/NUMBER_COLUMN-30/NUMBER_COLUMN;
-
-        // landscape
+//    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+//    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+//        // portrait
+//        boxW =self.view.frame.size.width/NUMBER_COLUMN-30/NUMBER_COLUMN;
+//
+//    } else {
+//        boxW =self.view.frame.size.height/NUMBER_COLUMN-30/NUMBER_COLUMN;
+//
+//        // landscape
+//    }
+//    boxW
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        boxW = viewSize.width/8 - 10;
+        
+    }else{
+        boxW = viewSize.width/3 - 10;
     }
     marginTop =  64;
     

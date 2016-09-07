@@ -7,8 +7,10 @@ target 'phimb' do
   pod 'SDWebImage', '~> 3.7'
   pod 'MarqueeLabel', '~> 2.7'
   pod 'RealReachability'
-   pod 'Firebase/Core'
+  pod 'Firebase/Core'
   pod 'Firebase/AdMob'
+  pod 'iCarousel', '~> 1.8'
+
 end
 
 target 'phimbTests' do

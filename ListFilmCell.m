@@ -9,6 +9,7 @@
 #import "ListFilmCell.h"
 #import "ColorSchemeHelper.h"
 #import "ImageUtils.h"
+#import "UIDevice-Hardware.h"
 #define BOXFILM_MARGIN 3
 #define BOXFILM_MARGIN_LEFT 0
 #define HOZ_BOXFILM_MARGIN_LEFT 20
@@ -91,17 +92,25 @@
     _filmNameEn.textColor = [UIColor grayColor];
     [self.contentView addSubview:_filmNameEn];
      */
-    if (_layoutStyle ==  LAYOUT_STYLE_VERTICAL) {
+//    if (_layoutStyle ==  LAYOUT_STYLE_VERTICAL) {
+    UIFont *font = [UIFont systemFontOfSize:10];
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(_actualWidth - 55, 10, 50, 20)];
+        font = [UIFont systemFontOfSize:15];
+    }else{
         _lbSotap = [[UILabel alloc] initWithFrame:CGRectMake(_actualWidth - 40, 10, 35, 16)];
+
+    }
         _lbSotap.text = @"a";
         _lbSotap.textAlignment = NSTextAlignmentCenter;
         _lbSotap.backgroundColor = [UIColor redColor];
         _lbSotap.layer.cornerRadius = 2.0;
         _lbSotap.layer.masksToBounds = YES;
         _lbSotap.textColor = [UIColor whiteColor];
-        _lbSotap.font = [UIFont systemFontOfSize:10.0];
+        _lbSotap.font = font;
         [self.contentView addSubview:_lbSotap];
-    }
+//    }
 }
 -(void)initIndicator{
         _indicator = [[UIActivityIndicatorView alloc]

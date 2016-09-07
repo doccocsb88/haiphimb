@@ -40,11 +40,13 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     NSMutableData *receivedData;
     CGFloat keyboardHeight;
     CGFloat playerHeight;
+    CGFloat infoHeight;
     CGFloat movieRatio;
     BOOL allowRotation;
     NSArray *_serverA;
     NSArray *_serverB;
     NSTimer *_timer;
+    CGFloat videoMinimumWidth;
     
 }
 @property (nonatomic ,strong)     NSURL *movieURL;
@@ -97,7 +99,13 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 
         self.view.backgroundColor = [UIColor clearColor];
         self.mpCurrentState = MPMoviePlaybackStateStopped;
-         ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+        NSString *deviceString =[[UIDevice currentDevice] platformString];
+        if ([deviceString containsString:@"iPad"]) {
+            ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+            
+        }else{
+            ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+        }
         NSLog(@"filmID : %ld",filmInfo._id);
 
     }
@@ -121,7 +129,15 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
                                              selector:@selector(didRotate:)
                                                  name:@"UIDeviceOrientationDidChangeNotification"
                                                object:nil];
-    ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+        videoMinimumWidth = CGRectGetWidth([[UIScreen mainScreen] bounds])/2;
+
+    }else{
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+        videoMinimumWidth = CGRectGetWidth([[UIScreen mainScreen] bounds])*2/3;
+    }
     [self supportedInterfaceOrientations];
     [self shouldAutorotate];
     if ([[NSUserDefaults standardUserDefaults] objectForKey:@"guideplayer"] == nil) {
@@ -144,16 +160,16 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     self.bannerView = [[GADBannerView alloc] initWithAdSize:GADAdSizeFromCGSize(CGSizeMake(320, 50))];
     self.bannerView.frame= CGRectMake(0, self.view.frame.size.height - 50, self.view.frame.size.width, 50);
     
-    self.bannerView.adUnitID = @"ca-app-pub-3940256099942544/2934735716";
+    self.bannerView.adUnitID = @"ca-app-pub-1737618998941554/9716869826";
     self.bannerView.rootViewController = self;
     
     GADRequest *request = [GADRequest request];
     // Requests test ads on devices you specify. Your test device ID is printed to the console when
     // an ad request is made. GADBannerView automatically returns test ads when running on a
     // simulator.
-    request.testDevices = @[
-                            @"2077ef9a63d2b398840261c8221a0c9a"  // Eric's iPod Touch
-                            ];
+//    request.testDevices = @[
+//                            @"31d3e2f86e101c729ad91ba5134da532133c490c"  // Eric's iPod Touch
+//                            ];
     [self.bannerView loadRequest:request];
     [self.view addSubview:self.bannerView];
 }
@@ -361,7 +377,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 -(void)initTabView{
     UIFont *font  = [UIFont systemFontOfSize:13.f];
 
-    _tabviewPanel = [[UIView alloc]initWithFrame:CGRectMake(0, playerHeight+playerHeight, viewWidth, 30)];
+    _tabviewPanel = [[UIView alloc]initWithFrame:CGRectMake(0, playerHeight+infoHeight, viewWidth, 30)];
     _tabviewPanel.backgroundColor = [UIColor whiteColor];
     CGFloat tabMargin = (btnTabWidth-100)/2;
     _btnTabInfo = [[UIButton alloc] initWithFrame:CGRectMake(tabMargin, 0, 100, 30)];
@@ -427,14 +443,20 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 }
 -(void)initViewInfo{
 
-    _infoView= [[TabInfoView alloc] initWithFrame: CGRectMake(0, playerHeight, self.view.frame.size.width, playerHeight)];
-    _infoView.backgroundColor = [UIColor whiteColor];
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        infoHeight = playerHeight *2/3;
+    }else{
+        infoHeight = playerHeight;
+    }
+     _infoView= [[TabInfoView alloc] initWithFrame: CGRectMake(0, playerHeight, self.view.frame.size.width, infoHeight)];
+       _infoView.backgroundColor = [UIColor whiteColor];
 
     [self.view addSubview:_infoView];
     //initscroll
-    CGFloat scrollH =viewHeight - infoMarginTop - (playerHeight+30);
+    CGFloat scrollH =viewHeight - infoMarginTop - (playerHeight+30) - 50;
 //    infoMarginTop+playerHeight
-    _scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, playerHeight + playerHeight+30, viewWidth*3, scrollH)];
+    _scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, playerHeight + infoHeight+30, viewWidth*3, scrollH)];
     _scrollView.contentSize = CGSizeMake(viewWidth*2, scrollH);
     _scrollView.backgroundColor = [UIColor whiteColor];
     _scrollView.showsHorizontalScrollIndicator = YES;
@@ -614,7 +636,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
             if (deltaX > delta && originSize == NO) {
                 if (velocity.x < 0) {
                     if (self.view.frame.origin.x + velocity.x/20 > 0) {
-                        self.view.frame = CGRectMake(self.view.frame.origin.x + velocity.x/20, self.view.frame.origin.y, self.view.frame.size.width, self.view.frame.size.height);
+                        self.view.frame = CGRectMake(self.view.frame.origin.x + velocity.x/30, self.view.frame.origin.y, self.view.frame.size.width, self.view.frame.size.height);
                         self.playerView.alpha = self.playerView.alpha - 0.01;
                     }else{
                         [self performSelector:@selector(pressedClose:) withObject:nil afterDelay:0];
@@ -684,7 +706,9 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 }
 -(void)scaleViewToMinimumSize{
    originSize = NO;
-    CGFloat toX = viewWidth/3;
+    self.playerView.originsize = originSize;
+    self.playerView.btnExpand.selected = YES;
+    CGFloat toX = viewWidth - videoMinimumWidth;
     CGFloat newW = viewWidth - toX;
     CGFloat pRatio = viewWidth/viewHeight;
 
@@ -692,14 +716,14 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     CGRect infoFrame = _infoView.frame;
     CGRect scrollFrame = _scrollView.frame;
     CGRect tabFrame = _tabviewPanel.frame;
-    
+//    CGFloat newH = 
     [UIView animateWithDuration:0.3f animations:^{
 //        self.view.frame = CGRectMake(0, 0, viewWidth, viewHeight);
         [self.view setFrame:CGRectMake(toX, toY, newW, viewHeight/pRatio)];
         CGRect playerFrame = self.playerView.frame;
         self.playerView.frame = CGRectMake(0, playerFrame.origin.y, newW, playerHeight*(newW/viewWidth));
         [playerView updatePlayerLayer];
-        CGRect preFrame = self.view.frame;
+//        CGRect preFrame = self.view.frame;
 
         _infoView.frame = CGRectMake(infoFrame.origin.x, toY+newW/pRatio, infoFrame.size.width, infoFrame.size.height);
         _tabviewPanel.frame= CGRectMake(tabFrame.origin.x, toY+newW/pRatio+infoFrame.size.height, tabFrame.size.width, tabFrame.size.height);
@@ -740,6 +764,8 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 }
 -(void)scaleViewToOriginalSize{
     originSize = YES;
+    self.playerView.originsize = originSize;
+    self.playerView.btnExpand.selected = NO;
 
     [UIView animateWithDuration:0.3f animations:^{
         self.view.frame = CGRectMake(0, 0, viewWidth, viewHeight);
@@ -749,9 +775,9 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 //        [self.movieIndicator setFrame:CGRectMake(0, marginTop, viewWidth, playerHeight)];
 //        [self.bgHeadrView setFrame:CGRectMake(0, 0, viewWidth, 64)];
        
-        CGFloat scrollH =viewHeight - infoMarginTop - (playerHeight+30);
+        CGFloat scrollH =viewHeight - infoMarginTop - (playerHeight+30) - 50;
         //    infoMarginTop+playerHeight
-        [_infoView setFrame:CGRectMake(0, infoMarginTop + playerHeight, self.view.frame.size.width, playerHeight)];
+        [_infoView setFrame:CGRectMake(0, infoMarginTop + playerHeight, self.view.frame.size.width, infoHeight)];
         [self.tabviewPanel setFrame:CGRectMake(0, infoMarginTop+playerHeight + _infoView.frame.size.height, viewWidth, 30)];
         [self.scrollView setFrame:CGRectMake(0, infoMarginTop + playerHeight+30 + _infoView.frame.size.height, viewWidth*3, scrollH)];
         [self.btnPlay setFrame:CGRectMake(viewWidth/2 - BUTTON_PLAY_SIZE/2, marginTop + viewHeight/8 - BUTTON_PLAY_SIZE/2, BUTTON_PLAY_SIZE, BUTTON_PLAY_SIZE)];
@@ -798,8 +824,8 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     CGFloat toX = preFrame.origin.x + deltaX;
     
     CGFloat newW = preFrame.size.width - deltaW;
-    if (newW<viewWidth*2/3) {
-        newW = viewWidth*2/3;
+    if (newW<videoMinimumWidth) {
+        newW = videoMinimumWidth;
     }else if(newW>viewWidth){
         newW = viewWidth;
     }
@@ -816,8 +842,8 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
         toY=viewHeight-(newW/pRatio + 50) ;
     }
     deltaY = toY - preFrame.origin.y;
-    if(toX>viewWidth/3){
-        toX = viewWidth/3;
+    if(toX>viewWidth - videoMinimumWidth){
+        toX = viewWidth- videoMinimumWidth;
     }else if(toX<0){
         toX = 0;
     }
@@ -1161,7 +1187,7 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     NSString *deviceString =[[UIDevice currentDevice] platformString];
     if ([deviceString containsString:@"iPad"]) {
         //panelWidth = self.view.frame.size.width - 320;
-        playerHeight =   viewHeight/3;
+        playerHeight =   viewHeight/2.5;
     }else{
         //panelWidth = PANEL_WIDTH;
         UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
@@ -1181,7 +1207,13 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 -(void)pressedClose:(UIButton *)button{
     [playerView clean];
     playerView = nil;
-    ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = YES;
+        
+    }else{
+        ((AppDelegate *)[[UIApplication sharedApplication] delegate]).allowRotation = NO;
+    }
     [((AppDelegate *)[[UIApplication sharedApplication] delegate]) closePlayer];
 //    [self dismissViewControllerAnimated:YES completion:nil];
 //    [self.view removeFromSuperview];
@@ -1488,7 +1520,9 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
 -(void)playerDidExpandLess{
     [self scaleViewToMinimumSize];
 }
-
+-(void)playerDidExpandMore{
+    [self scaleViewToOriginalSize];
+}
 -(void)playNextvideo:(NSArray *)server{
     curIndexPath = [NSIndexPath indexPathForItem:curIndexPath.row + 1 inSection:curIndexPath.section];
     movieURL = [NSURL URLWithString:[server objectAtIndex:curIndexPath.row]];
@@ -1569,7 +1603,9 @@ const NSString *API_URL_WHATCH_FILM = @"http://www.phimb.net/json-api/movies.php
     NSNumber *number = [timer userInfo];
     if (number) {
         UIDeviceOrientation orientation = [number integerValue];
+        if(originSize){
         [self doRotate:orientation];
+        }
 
     }
 }

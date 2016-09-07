@@ -9,12 +9,16 @@
 #import <UIKit/UIKit.h>
 #import "PlayVideoViewController.h"
 #import "SearchResultItem.h"
+#import <GoogleMobileAds/GoogleMobileAds.h>
+
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
+@property (strong, nonatomic) GADBannerView *bannerView;
 @property (nonatomic) BOOL allowRotation;
 @property (strong, nonatomic) PlayVideoViewController *playerViewController;
 + (UIViewController*) topMostController;
+-(void)showAddBanner:(UIViewController *)controller;
 -(BOOL)canClick;
 -(void)showPlayer:(SearchResultItem *)item inView:(UIView *)view;
 -(void)closePlayer;

@@ -49,7 +49,7 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
     _activityIndicator.center = self.view.center;
     _activityIndicator.hidesWhenStopped = YES;
     [self.view addSubview:_activityIndicator];
-    [_activityIndicator stopAnimating];
+    [_activityIndicator startAnimating];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(networkChanged:)
                                                  name:kRealReachabilityChangedNotification
@@ -67,13 +67,20 @@ const NSString *API_URL_SERIES_FILM= @"http://www.phimb.net/api/list/538c7f45612
 }
 -(void)setUp{
     paramPage = 1;
-    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-    if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
-        // portrait
-        boxW =self.view.frame.size.width/NUMBER_COLUMN- 10;
-    } else {
-        boxW =self.view.frame.size.height/NUMBER_COLUMN-10;
-        // landscape
+ 
+    NSString *deviceString =[[UIDevice currentDevice] platformString];
+    if ([deviceString containsString:@"iPad"]) {
+        boxW =self.view.frame.size.width/8 - 10;
+
+    }else{
+        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+        if (orientation == UIInterfaceOrientationPortrait || orientation == UIInterfaceOrientationPortraitUpsideDown) {
+            // portrait
+            boxW =self.view.frame.size.width/NUMBER_COLUMN- 10;
+        } else {
+            boxW =self.view.frame.size.height/NUMBER_COLUMN-10;
+            // landscape
+        }
     }
     //setupHeader
     _headerView.backgroundColor = [ColorSchemeHelper sharedNationHeaderColor];

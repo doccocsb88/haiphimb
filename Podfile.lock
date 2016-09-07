@@ -18,6 +18,7 @@ PODS:
   - GoogleSymbolUtilities (1.1.1)
   - GoogleUtilities (1.3.1):
     - GoogleSymbolUtilities (~> 1.0)
+  - iCarousel (1.8.2)
   - MarqueeLabel (2.7.5):
     - MarqueeLabel/ObjC (= 2.7.5)
   - MarqueeLabel/ObjC (2.7.5)
@@ -33,6 +34,7 @@ PODS:
 DEPENDENCIES:
   - Firebase/AdMob
   - Firebase/Core
+  - iCarousel (~> 1.8)
   - MarqueeLabel (~> 2.7)
   - RealReachability
   - SDWebImage (~> 3.7)
@@ -45,10 +47,11 @@ SPEC CHECKSUMS:
   GoogleInterchangeUtilities: def8415a862effc67d549d5b5b0b9c7a2f97d4de
   GoogleSymbolUtilities: 33117db1b5f290c6fbf259585e4885b4c84b98d7
   GoogleUtilities: 56c5ac05b7aa5dc417a1bb85221a9516e04d7032
+  iCarousel: 67c8a43da5a46795b56aadfc96cd36a16f6149b2
   MarqueeLabel: bd476f1a91e4414a6aec4ea4096a9979e8c8c2ad
   RealReachability: 8b6644c6b3145f7552ed83bffb52c49b0f3b55e3
   SDWebImage: 69c6303e3348fba97e03f65d65d4fbc26740f461
 
-PODFILE CHECKSUM: f53cdfe55527fef409e634ad1b91fb4ab67e7708
+PODFILE CHECKSUM: 6ce886d4a8f16e4976158145f360410bfa6b5f92
 
 COCOAPODS: 1.0.1

@@ -14,6 +14,7 @@
 @protocol GUIPlayerViewDelegate <NSObject>
 
 @optional
+- (void)playerDidExpandMore;
 - (void)playerDidExpandLess;
 - (void)playerDidNext;
 - (void)playerDidPrevious;
@@ -35,6 +36,9 @@
 @property (strong, nonatomic) UIButton *fullscreenButton;
 @property (strong, nonatomic) UIButton *fullscreenButtonz;
 @property (strong, nonatomic) MarqueeLabel *lbTitle;
+@property (strong, nonatomic) UIButton *nextButton;
+@property (strong, nonatomic) UIButton *prevButton;
+@property (strong, nonatomic) UIButton *btnExpand;
 @property (assign, nonatomic) BOOL seeking;
 @property (assign, nonatomic) BOOL fseeking;
 
@@ -46,6 +50,9 @@
 @property (assign, nonatomic) int total;
 @property (assign, nonatomic) int current;
 @property (assign, nonatomic) BOOL rotating;
+@property (assign, nonatomic) BOOL originsize;
+@property (assign, nonatomic) BOOL isReady;
+
 @property (assign, nonatomic) int lastorientation;
 @property (assign, nonatomic) int hasController;
 
